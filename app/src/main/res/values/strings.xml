@@ -7,4 +7,5 @@
     <string name="exchange_button">Change Start/Destination</string>
     <string name="search_button">Search Paths</string>
     <string name="title_search">search</string>
+    <string name="select_sort_option">정렬 옵션 선택</string>
 </resources>
