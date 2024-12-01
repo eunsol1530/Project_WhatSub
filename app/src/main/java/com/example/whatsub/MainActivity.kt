@@ -4,11 +4,13 @@ import android.os.Bundle
 import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.fragment.app.commit
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.whatsub.databinding.ActivityMainBinding
+import com.example.whatsub.ui.home.HomeFragment
 
 class MainActivity : AppCompatActivity() {
 
@@ -43,7 +45,7 @@ class MainActivity : AppCompatActivity() {
 
         // Game 버튼
         findViewById<ImageButton>(R.id.nav_icon_game_ib).setOnClickListener {
-            navController.navigate(R.id.navigation_dashboard)
+            navController.navigate(R.id.navigation_game)
         }
 
         // News 버튼

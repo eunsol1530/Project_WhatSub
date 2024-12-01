@@ -1,6 +1,10 @@
 <resources>
     <string name="app_name">WhatSub</string>
     <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="title_favorites">favorites</string>
+    <string name="title_game">game</string>
+    <string name="title_news">news</string>
+    <string name="exchange_button">Change Start/Destination</string>
+    <string name="search_button">Search Paths</string>
+    <string name="title_search">search</string>
 </resources>
