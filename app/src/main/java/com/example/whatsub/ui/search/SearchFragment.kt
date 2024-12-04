@@ -1,17 +1,41 @@
 package com.example.whatsub.ui.search
 
+import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.whatsub.R
+import com.example.whatsub.model.PathData
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.io.IOException
 
 class SearchFragment : Fragment (R.layout.fragment_search) {
+
+    private fun loadPathDataFromJson(): List<PathData> {
+        return try {
+            val jsonString = requireContext().resources.openRawResource(R.raw.example_path_data)
+                .bufferedReader().use { it.readText() }
+
+            val gson = Gson()
+            val listType = object : TypeToken<List<PathData>>() {}.type
+            gson.fromJson(jsonString, listType)
+        } catch (e: IOException) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -21,19 +45,68 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         val startLocation = arguments?.getString("startLocation") ?: "출발지가 없습니다"
         val destinationLocation = arguments?.getString("destinationLocation") ?: "도착지가 없습니다"
 
-        // EditText 가져오기
+        // Log 추가
+        Log.d("SearchFragment", "Received arguments: startLocation=$startLocation, destinationLocation=$destinationLocation")
+
+        if (startLocation.isEmpty() || destinationLocation.isEmpty()) {
+            Toast.makeText(context, "잘못된 데이터입니다. 홈 화면으로 돌아갑니다.", Toast.LENGTH_SHORT).show()
+            findNavController().popBackStack() // 이전 화면으로 이동
+            return
+        }
+
+        // UI 요소 초기화 및 데이터 처리
         val startInput: EditText = view.findViewById(R.id.start_location)
         val destinationInput: EditText = view.findViewById(R.id.destination_location)
-
-        // EditText에 기본값 설정
+        val pathDataTextViews = listOf(
+            view.findViewById<TextView>(R.id.path_item1),
+            view.findViewById<TextView>(R.id.path_item2),
+            view.findViewById<TextView>(R.id.path_item3),
+            view.findViewById<TextView>(R.id.path_item4)
+        )
+        // EditText 기본값 설정
         startInput.setText(startLocation)
         destinationInput.setText(destinationLocation)
 
-        // 교환 버튼 ImageButton
+        // JSON 데이터 불러오기
+
+        val pathDataList = loadPathDataFromJson()
+        Log.d("SearchFragment", "Parsed JSON: $pathDataTextViews")
+
+        // 데이터를 업데이트하는 함수
+        fun updatePathData(start: String, destination: String) {
+            val matchedData = pathDataList.filter {
+                it.startStation.toString() == start && it.endStation.toString() == destination
+            }
+
+            if (matchedData.isNotEmpty()) {
+                matchedData.forEachIndexed { index, pathData ->
+                    if (index < pathDataTextViews.size) {
+                        val textView = pathDataTextViews[index]
+                        textView.visibility = View.VISIBLE
+                        textView.text = """
+                            출발: ${pathData.startStation}
+                            도착: ${pathData.endStation}
+                            총 시간: ${pathData.totalTime}
+                            총 비용: ${pathData.totalCost}
+                        """.trimIndent()
+                    }
+                }
+                pathDataTextViews.drop(matchedData.size).forEach { it.visibility = View.GONE }
+            } else {
+                Toast.makeText(requireContext(), "해당 경로를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
+                pathDataTextViews.forEach { it.visibility = View.GONE }
+            }
+        }
+
+        // 초기 데이터 표시
+        updatePathData(startLocation, destinationLocation)
+
+        val researchBtn: ImageButton = view.findViewById(R.id.research_btn)
         val exchangeButton: ImageButton = view.findViewById(R.id.btn_exchange)
 
-        // 버튼 클릭 이벤트
+        // 교환 버튼 클릭 이벤트
         exchangeButton.setOnClickListener {
+            Log.d("SearchFragment", "Exchange Button Clicked!")
 
             val startText = startInput.text.toString()
             val destinationText = destinationInput.text.toString()
@@ -52,54 +125,24 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             destinationInput.setText(startText)
         }
 
-        // 최소 시간 텍스트와 드롭다운 아이콘
-        val sortWayText: TextView = view.findViewById(R.id.sort_way)
-        val sortWayDropdown: ImageButton = view.findViewById(R.id.min_time_dropdown)
+        // 재탐색 버튼 클릭 이벤트
+        researchBtn.setOnClickListener {
+            val newStart = startInput.text.toString()
+            val newDestination = destinationInput.text.toString()
 
-        // 이전 페이지에서 전달된 기본 옵션
-        val defaultOption = arguments?.getString("selectedOption") ?: "option_min_time"
-
-        // 기본 옵션 설정
-        when (defaultOption) {
-            "option_min_time" -> sortWayText.text = "최소 시간"
-            "option_min_cost" -> sortWayText.text = "최소 비용"
-            "option_min_transfer" -> sortWayText.text = "최소 환승"
-        }
-
-
-        // 클릭 이벤트에 PopupMenu 연결
-        val showPopupMenu: (View) -> Unit = { anchorView ->
-            val popupMenu = PopupMenu(requireContext(), anchorView)
-            popupMenu.menuInflater.inflate(R.menu.min_sort_menu, popupMenu.menu)
-
-            // PopupMenu 항목 클릭 이벤트 처리
-            popupMenu.setOnMenuItemClickListener { menuItem ->
-                when (menuItem.itemId) {
-                    R.id.option_min_time -> {
-                        sortWayText.text = "최소 시간"
-                        true
-                    }
-
-                    R.id.option_min_cost -> {
-                        sortWayText.text = "최소 비용"
-                        true
-                    }
-
-                    R.id.option_min_transfer -> {
-                        sortWayText.text = "최소 환승"
-                        true
-                    }
-
-                    else -> false
-                }
+            if (newStart.isBlank() || newDestination.isBlank()) {
+                Toast.makeText(requireContext(), "출발지와 도착지를 입력해주세요.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
 
-            // PopupMenu 표시
-            popupMenu.show()
+            if (newStart == newDestination) {
+                Toast.makeText(context, "출발지와 도착지가 동일합니다. 다시 입력해주세요.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+
+            updatePathData(newStart, newDestination)
         }
 
-        // 텍스트와 화살표 아이콘 클릭 시 PopupMenu 표시
-        sortWayText.setOnClickListener { showPopupMenu(it) }
-        sortWayDropdown.setOnClickListener { showPopupMenu(it) }
     }
 }
