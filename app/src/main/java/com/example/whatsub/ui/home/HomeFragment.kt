@@ -66,17 +66,21 @@ class HomeFragment : Fragment() {
                 destinationInput.setText(startText)
             }
         }
-        searchButton.setOnClickListener{
+        searchButton.setOnClickListener {
             if (startInput.text.isNullOrBlank() || destinationInput.text.isNullOrBlank()) {
                 Toast.makeText(context, "출발지와 도착지를 입력해주세요", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
+            if (startInput.text.toString() == destinationInput.text.toString()) {
+                Toast.makeText(context, "출발지와 도착지가 동일합니다. 다시 입력해주세요.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             val bundle = Bundle()
             bundle.putString("startLocation", startInput.text.toString())
             bundle.putString("destinationLocation", destinationInput.text.toString())
+            bundle.putString("selectedOption", "option_min_time") // 기본 옵션 설정
 
             findNavController().navigate(R.id.action_homeFragment_to_searchFragment, bundle)
-            }
         }
     }
+}
