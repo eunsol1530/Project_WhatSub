@@ -111,7 +111,6 @@ class HomeFragment : Fragment() {
             val bundle = Bundle().apply {
                 putString("startLocation", startInput.text.toString())
                 putString("destinationLocation", destinationInput.text.toString())
-                putString("selectedOption", "option_min_time") // 기본 옵션 설정
             }
 
             findNavController().navigate(R.id.action_homeFragment_to_searchFragment, bundle)
