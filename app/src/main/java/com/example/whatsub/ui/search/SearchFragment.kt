@@ -61,7 +61,6 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         }
     }
 
-
     // 경로 View 생성 함수
     private fun createRouteView(path: TransferPath, label: String): View {
         // 최상위 컨테이너
@@ -69,7 +68,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
+                115.dp
             ).apply {
                 setMargins(16.dp, 8.dp, 16.dp, 8.dp)
             }
@@ -81,50 +80,120 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             text = label
             textSize = 12f
             setPadding(8.dp, 4.dp, 8.dp, 4.dp)
-            setTypeface(typeface, Typeface.BOLD)
+            setTypeface(null, Typeface.BOLD)
         }
         routeView.addView(labelTextView)
+// 총 시간, 총 비용, 즐겨찾기 버튼을 포함할 컨테이너
+        val infoContainer = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            gravity = Gravity.CENTER_VERTICAL // 수직 중앙 정렬
+        }
 
         // 총 시간 텍스트
         val totalTimeTextView = TextView(requireContext()).apply {
             text = "${path.totalTime}"
-            textSize = 16f
-            setPadding(8.dp, 4.dp, 8.dp, 4.dp)
+            textSize = 18f
+            layoutParams = LinearLayout.LayoutParams(
+                0, // 남은 공간 균등 배분
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f // 가중치
+            )
+            setPadding(8.dp, 4.dp, 0, 4.dp)
+            setTypeface(null, Typeface.BOLD) // 폰트 두껍게 설정
         }
-        routeView.addView(totalTimeTextView)
+        infoContainer.addView(totalTimeTextView)
 
+        // 총 비용 텍스트
         val totalCostTextView = TextView(requireContext()).apply {
             text = "${path.totalCost}"
             textSize = 12f
-            setPadding(8.dp, 4.dp, 8.dp, 4.dp)
+            layoutParams = LinearLayout.LayoutParams(
+                0, // 남은 공간 균등 배분
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f // 가중치
+            )
+            setPadding(0, 4.dp, 8.dp, 4.dp)
         }
-        routeView.addView(totalCostTextView)
+        infoContainer.addView(totalCostTextView)
+
+        // 즐겨찾기 버튼
+        val favoriteButton = ImageButton(requireContext()).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                40.dp,
+                40.dp
+            ).apply {
+                setMargins(8.dp, 0, 8.dp, 0)
+            }
+            setImageResource(R.drawable.icon_favorites_blank)
+            scaleType = ImageView.ScaleType.FIT_CENTER // 버튼 안에서 축소 및 중앙 배치
+            setBackgroundColor(Color.TRANSPARENT) // 배경 투명
+
+            var isFavorite = false // 즐겨찾기 여부 상태 변수
+
+            setOnClickListener {
+                isFavorite = !isFavorite // 상태 반전
+
+                if (isFavorite) {
+                    setImageResource(R.drawable.icon_favorites_fill) // 아이콘 변경
+                    saveToFavorites(path) // 즐겨찾기 저장
+                    Toast.makeText(context, "즐겨찾기에 추가되었습니다!", Toast.LENGTH_SHORT).show()
+                } else {
+                    setImageResource(R.drawable.icon_favorites_blank) // 아이콘 변경
+                    removeFromFavorites(path) // 즐겨찾기 삭제
+                    Toast.makeText(context, "즐겨찾기가 취소되었습니다!", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        infoContainer.addView(favoriteButton)
+
+        // infoContainer를 routeView에 추가
+        routeView.addView(infoContainer)
+
 
         // 경로 표시 영역
         val routeContainer = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                64.dp
-            )
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 8.dp, 0, 8.dp) // 상하 여백
+            }
         }
 
-        path.segments.forEach { segment ->
+        fun String.extractMinutes(): Int {
+            val timeParts = this.split("시간", "분", "초").mapNotNull { it.trim().toIntOrNull() }
+            val hours = if (timeParts.size > 1) timeParts[0] else 0
+            val minutes = timeParts.getOrElse(timeParts.size - 1) { 0 }
+            return hours * 60 + minutes
+        }
+
+// 총 시간의 분 단위로 비율 계산
+        val totalMinutes = path.segments.sumOf { it.timeOnLine.extractMinutes() }
+        path.segments.forEachIndexed { index, segment ->
+            // 각 구간의 비율
+            val widthRatio = segment.timeOnLine.extractMinutes().toFloat() / totalMinutes
+
+            // 각 구간 뷰
             val segmentView = LinearLayout(requireContext()).apply {
                 orientation = LinearLayout.VERTICAL
                 layoutParams = LinearLayout.LayoutParams(
-                    0, // 가로 비율 조정
+                    0, // 비율에 따라 동적으로 설정
                     LinearLayout.LayoutParams.WRAP_CONTENT,
-                    1f // 균등 분배
+                    widthRatio // 가중치로 비율 반영
                 ).apply {
-                    setMargins(4.dp, 0, 4.dp, 0)
+                    setMargins(0, 0, 0, 0)
                 }
             }
 
             // 호선 정보
             val lineTextView = TextView(requireContext()).apply {
                 text = "${segment.lineNumber}호선"
-                textSize = 12f
+                textSize = 8f
                 setBackgroundColor(getLineBackground(segment.lineNumber)) // 호선별 배경
                 setPadding(4.dp, 2.dp, 4.dp, 2.dp)
                 gravity = Gravity.CENTER
@@ -140,27 +209,42 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             segmentView.addView(timeTextView)
 
             routeContainer.addView(segmentView)
+
+            // 환승 아이콘 추가
+            if (index < path.segments.size - 1) {
+                val transferIcon = ImageView(requireContext()).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        30.dp,
+                        30.dp
+                    ).apply {
+                        gravity = Gravity.CENTER_VERTICAL
+                        setMargins(0, 0, 0, 4.dp)
+                    }
+                    setImageResource(R.drawable.icon_transfer) // 환승 아이콘
+                    setBackgroundColor(Color.TRANSPARENT) // 배경 투명
+                    scaleType = ImageView.ScaleType.FIT_CENTER // 버튼 안에서 축소 및 중앙 배치
+
+                }
+                routeContainer.addView(transferIcon)
+            }
         }
         routeView.addView(routeContainer)
 
-        // 즐겨찾기 버튼
-        val favoriteButton = ImageButton(requireContext()).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(8.dp, 8.dp, 8.dp, 8.dp)
-                gravity = Gravity.END
-            }
-            setImageResource(R.drawable.icon_favorites_blank)
-            setBackgroundColor(requireContext().getColor(android.R.color.transparent))
-            setOnClickListener {
-                saveToFavorites(path) // 즐겨찾기 저장
-            }
-        }
-        routeView.addView(favoriteButton)
-
         return routeView
+    }
+
+
+    // 즐겨찾기 삭제 함수
+    private fun removeFromFavorites(route: TransferPath) {
+        val sharedPref = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
+        val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: mutableSetOf()
+
+        // 경로를 JSON으로 변환하여 저장된 항목에서 제거
+        val routeJson = Gson().toJson(route)
+        if (favorites.contains(routeJson)) {
+            favorites.remove(routeJson)
+            sharedPref.edit().putStringSet("routes", favorites).apply()
+        }
     }
 
     private fun String.getMinutesRatio(segments: List<Transfer>): Float {

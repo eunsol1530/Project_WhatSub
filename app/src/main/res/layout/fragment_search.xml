@@ -55,8 +55,8 @@
 
         <ImageButton
             android:id="@+id/research_btn"
-            android:layout_width="220dp"
-            android:layout_height="50dp"
+            android:layout_width="180dp"
+            android:layout_height="40dp"
             android:importantForAccessibility="no"
             android:scaleType="centerInside"
             android:src="@drawable/img_research_btn"
