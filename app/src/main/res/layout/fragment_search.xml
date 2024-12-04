@@ -10,7 +10,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/search_path"
         android:layout_width="match_parent"
-        android:layout_height="220dp"
+        android:layout_height="180dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -61,7 +61,6 @@
             android:scaleType="centerInside"
             android:src="@drawable/img_research_btn"
             android:background="@color/white"
-            android:layout_marginTop="10dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/btn_exchange"
@@ -69,51 +68,13 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <LinearLayout
-            android:id="@+id/pathDataContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/search_path"
-            android:layout_marginTop="0dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/path_item1"
-                android:layout_width="match_parent"
-                android:layout_height="128dp"
-                android:padding="8dp"
-                android:background="@color/white"
-                android:text=""
-                android:textSize="16sp" />
-
-            <TextView
-                android:id="@+id/path_item2"
-                android:layout_width="match_parent"
-                android:layout_height="128dp"
-                android:padding="8dp"
-                android:background="@color/white"
-                android:text=""
-                android:textSize="16sp" />
-
-
-            <TextView
-                android:id="@+id/path_item3"
-                android:layout_width="match_parent"
-                android:layout_height="128dp"
-                android:padding="8dp"
-                android:background="@color/white"
-                android:text=""
-                android:textSize="16sp" />
-
-
-            <TextView
-                android:id="@+id/path_item4"
-                android:layout_width="match_parent"
-                android:layout_height="128dp"
-                android:padding="8dp"
-                android:background="@color/white"
-                android:text=""
-                android:textSize="16sp" />
-        </LinearLayout>
+    <!-- 동적 View를 추가할 컨테이너 -->
+    <LinearLayout
+        android:id="@+id/routeContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/search_path"
+        app:layout_constraintBottom_toBottomOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

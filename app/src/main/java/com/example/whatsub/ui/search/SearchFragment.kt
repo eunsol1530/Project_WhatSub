@@ -1,9 +1,14 @@
 package com.example.whatsub.ui.search
 
+import android.content.Context
+import android.content.res.Resources
+import android.graphics.Color
 import android.graphics.Rect
+import android.graphics.Typeface
 import android.os.Bundle
 import android.os.TestLooperManager
 import android.util.Log
+import android.view.Gravity
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageButton
@@ -17,8 +22,11 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.whatsub.R
+import com.example.whatsub.model.CheapestPath
 import com.example.whatsub.model.TransferPath
 import com.example.whatsub.model.PathData
+import com.example.whatsub.model.ShortestPath
+import com.example.whatsub.model.Transfer
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.IOException
@@ -36,6 +44,170 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             e.printStackTrace()
             PathData(null, null, null) // 기본값으로 빈 PathData 반환
         }
+    }
+
+    private fun getLineBackground(lineNumber: Int): Int {
+        return when (lineNumber) {
+            1 -> Color.parseColor("#00af50")
+            2 -> Color.parseColor("#002060")
+            3 -> Color.parseColor("#973b38")
+            4 -> Color.parseColor("#ff0000")
+            5 -> Color.parseColor("#4a7ebc")
+            6 -> Color.parseColor("#ffc00c")
+            7 -> Color.parseColor("#94d055")
+            8 -> Color.parseColor("#00aff0")
+            9 -> Color.parseColor("#70309f")
+            else -> Color.GRAY
+        }
+    }
+
+
+    // 경로 View 생성 함수
+    private fun createRouteView(path: TransferPath, label: String): View {
+        // 최상위 컨테이너
+        val routeView = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(16.dp, 8.dp, 16.dp, 8.dp)
+            }
+            setBackgroundColor(Color.parseColor("#ffffff"))
+        }
+
+        // 라벨 (최소 시간/최소 비용/최소 환승)
+        val labelTextView = TextView(requireContext()).apply {
+            text = label
+            textSize = 12f
+            setPadding(8.dp, 4.dp, 8.dp, 4.dp)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        routeView.addView(labelTextView)
+
+        // 총 시간 텍스트
+        val totalTimeTextView = TextView(requireContext()).apply {
+            text = "${path.totalTime}"
+            textSize = 16f
+            setPadding(8.dp, 4.dp, 8.dp, 4.dp)
+        }
+        routeView.addView(totalTimeTextView)
+
+        val totalCostTextView = TextView(requireContext()).apply {
+            text = "${path.totalCost}"
+            textSize = 12f
+            setPadding(8.dp, 4.dp, 8.dp, 4.dp)
+        }
+        routeView.addView(totalCostTextView)
+
+        // 경로 표시 영역
+        val routeContainer = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                64.dp
+            )
+        }
+
+        path.segments.forEach { segment ->
+            val segmentView = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    0, // 가로 비율 조정
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    1f // 균등 분배
+                ).apply {
+                    setMargins(4.dp, 0, 4.dp, 0)
+                }
+            }
+
+            // 호선 정보
+            val lineTextView = TextView(requireContext()).apply {
+                text = "${segment.lineNumber}호선"
+                textSize = 12f
+                setBackgroundColor(getLineBackground(segment.lineNumber)) // 호선별 배경
+                setPadding(4.dp, 2.dp, 4.dp, 2.dp)
+                gravity = Gravity.CENTER
+            }
+            segmentView.addView(lineTextView)
+
+            // 소요 시간 정보
+            val timeTextView = TextView(requireContext()).apply {
+                text = segment.timeOnLine
+                textSize = 10f
+                gravity = Gravity.CENTER
+            }
+            segmentView.addView(timeTextView)
+
+            routeContainer.addView(segmentView)
+        }
+        routeView.addView(routeContainer)
+
+        // 즐겨찾기 버튼
+        val favoriteButton = ImageButton(requireContext()).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(8.dp, 8.dp, 8.dp, 8.dp)
+                gravity = Gravity.END
+            }
+            setImageResource(R.drawable.icon_favorites_blank)
+            setBackgroundColor(requireContext().getColor(android.R.color.transparent))
+            setOnClickListener {
+                saveToFavorites(path) // 즐겨찾기 저장
+            }
+        }
+        routeView.addView(favoriteButton)
+
+        return routeView
+    }
+
+    private fun String.getMinutesRatio(segments: List<Transfer>): Float {
+        val totalMinutes = segments.sumOf { it.timeOnLine.extractMinutes() }
+        return this.extractMinutes() / totalMinutes.toFloat()
+    }
+
+    private fun String.extractMinutes(): Int {
+        val minutes = this.split("분")[0].toIntOrNull() ?: 0
+        return minutes
+    }
+
+    // 즐겨찾기 저장 함수
+    private fun saveToFavorites(route: TransferPath) {
+        val sharedPref = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
+        val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: mutableSetOf()
+        favorites.add(Gson().toJson(route))
+        sharedPref.edit().putStringSet("routes", favorites).apply()
+        Toast.makeText(context, "즐겨찾기에 추가되었습니다!", Toast.LENGTH_SHORT).show()
+    }
+
+    // dp 변환 확장 함수
+    private val Int.dp: Int
+        get() = (this * Resources.getSystem().displayMetrics.density).toInt()
+
+    // createRouteView 오버로드: ShortestPath
+    private fun createRouteView(path: ShortestPath, label: String): View {
+        return createRouteView(
+            TransferPath(
+                totalTime = path.totalTime,
+                totalCost = path.totalCost,
+                segments = path.transfers
+            ),
+            label
+        )
+    }
+
+    // createRouteView 오버로드: CheapestPath
+    private fun createRouteView(path: CheapestPath, label: String): View {
+        return createRouteView(
+            TransferPath(
+                totalTime = path.totalTime,
+                totalCost = path.totalCost,
+                segments = path.transfers
+            ),
+            label
+        )
     }
 
 
@@ -59,13 +231,9 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         // UI 요소 초기화 및 데이터 처리
         val startInput: EditText = view.findViewById(R.id.start_location)
         val destinationInput: EditText = view.findViewById(R.id.destination_location)
-        // UI 요소 초기화
-        val pathDataTextViews = listOf(
-            view.findViewById<TextView>(R.id.path_item1),
-            view.findViewById<TextView>(R.id.path_item2),
-            view.findViewById<TextView>(R.id.path_item3),
-            view.findViewById<TextView>(R.id.path_item4)
-        )
+        val routeContainer: LinearLayout = view.findViewById(R.id.routeContainer)
+
+
         // EditText 기본값 설정
         startInput.setText(startLocation)
         destinationInput.setText(destinationLocation)
@@ -73,112 +241,34 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         // JSON 데이터 불러오기
 
         val pathData = loadPathDataFromJson()
-        Log.d("SearchFragment", "Parsed JSON: $pathDataTextViews")
 
-        // 데이터 바인딩
-        // 최소 시간 데이터 처리
-        val shortestPath = pathData.shortestPath
-        if (shortestPath != null) {
-            pathDataTextViews[0].text =
-                "최소 시간: ${shortestPath.totalTime}, 비용: ${shortestPath.totalCost}"
-        } else {
-            pathDataTextViews[0].text = "최소 시간 데이터 없음"
-        }
+        // 경로 데이터를 동적으로 추가
+        fun displayRoutes(pathData: PathData) {
+            routeContainer.removeAllViews() // 기존 View 초기화
 
-        // 최소 비용 데이터 처리
-        val cheapestPath = pathData.cheapestPath
-        if (cheapestPath != null) {
-            pathDataTextViews[1].text =
-                "최저 비용: ${cheapestPath.totalTime}, 비용: ${cheapestPath.totalCost}"
-        } else {
-            pathDataTextViews[1].text = "최저 비용 데이터 없음"
-        }
-
-        // 최소 환승 경로 데이터 처리
-        val leastTransfersPaths = pathData.leastTransfersPath?.paths
-        if (!leastTransfersPaths.isNullOrEmpty()) {
-            val transferInfo = leastTransfersPaths.joinToString(separator = "\n") { path ->
-                val time = path.totalTime ?: "시간 정보 없음"
-                val cost = path.totalCost ?: "비용 정보 없음"
-                "시간: $time, 비용: $cost"
-            }
-            val totalTransfers = pathData.leastTransfersPath?.totalTransfers ?: "정보 없음"
-            pathDataTextViews[2].text = "최소 환승: ${totalTransfers}번 환승\n$transferInfo"
-        } else {
-            pathDataTextViews[2].text = "최소 환승 데이터 없음"
-        }
-
-
-        // 데이터를 업데이트하는 함수
-        fun updatePathData(start: String, destination: String) {
-            val pathData = loadPathDataFromJson()
-
-            // 매칭된 경로 데이터를 순서대로 저장
-            val matchedPaths = mutableListOf<String>()
-
-            // shortestPath 확인
             pathData.shortestPath?.let { shortestPath ->
-                if (shortestPath.startStation.toString() == start && shortestPath.endStation.toString() == destination) {
-                    matchedPaths.add(
-                        """
-                출발: ${shortestPath.startStation}
-                도착: ${shortestPath.endStation}
-                총 시간: ${shortestPath.totalTime}
-                총 비용: ${shortestPath.totalCost}
-                """.trimIndent()
-                    )
-                }
+                routeContainer.addView(createRouteView(shortestPath, label = "최소 시간"))
             }
 
-            // cheapestPath 확인
             pathData.cheapestPath?.let { cheapestPath ->
-                if (cheapestPath.startStation.toString() == start && cheapestPath.endStation.toString() == destination) {
-                    matchedPaths.add(
-                        """
-                출발: ${cheapestPath.startStation}
-                도착: ${cheapestPath.endStation}
-                총 시간: ${cheapestPath.totalTime}
-                총 비용: ${cheapestPath.totalCost}
-                """.trimIndent()
-                    )
-                }
+                routeContainer.addView(createRouteView(cheapestPath, label = "최소 비용"))
             }
 
-            // leastTransfersPath 확인
-            pathData.leastTransfersPath?.paths?.forEach { transferPath ->
-                val fromStation = transferPath.segments.firstOrNull()?.fromStation?.toString()
-                val toStation = transferPath.segments.lastOrNull()?.toStation?.toString()
-
-                if (fromStation == start && toStation == destination) {
-                    matchedPaths.add(
-                        """
-                출발: $fromStation
-                도착: $toStation
-                총 시간: ${transferPath.totalTime ?: "정보 없음"}
-                총 비용: ${transferPath.totalCost ?: "정보 없음"}
-                """.trimIndent()
-                    )
-                }
-            }
-
-            // 고정된 TextView에 데이터 매핑
-            pathDataTextViews.forEachIndexed { index, textView ->
-                if (index < matchedPaths.size) {
-                    textView.visibility = View.VISIBLE
-                    textView.text = matchedPaths[index]
-                } else {
-                    textView.visibility = View.GONE // 남는 TextView 숨기기
-                }
-            }
-
-            // 매칭된 데이터가 없을 경우 처리
-            if (matchedPaths.isEmpty()) {
-                Toast.makeText(requireContext(), "해당 경로를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
-                pathDataTextViews.forEach { it.visibility = View.GONE }
+            pathData.leastTransfersPath?.paths?.forEachIndexed { index, transferPath ->
+                routeContainer.addView(
+                    createRouteView(transferPath, label = "최소 환승 (${index + 1})")
+                )
             }
         }
+        Log.d("displayRoutes", "ShortestPath: ${pathData.shortestPath}")
+        Log.d("displayRoutes", "CheapestPath: ${pathData.cheapestPath}")
+        Log.d("displayRoutes", "LeastTransfersPath: ${pathData.leastTransfersPath?.paths}")
+
+
         // 초기 데이터 표시
-        updatePathData(startLocation, destinationLocation)
+        displayRoutes(pathData)
+
+        // 초기 데이터 표시
         val researchBtn: ImageButton = view.findViewById(R.id.research_btn)
         val exchangeButton: ImageButton = view.findViewById(R.id.btn_exchange)
 
@@ -218,8 +308,6 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 return@setOnClickListener
             }
 
-
-            updatePathData(newStart, newDestination)
         }
 
     }
