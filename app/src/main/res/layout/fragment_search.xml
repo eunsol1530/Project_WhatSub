@@ -70,6 +70,7 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
         <LinearLayout
+            android:id="@+id/pathDataContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
@@ -83,7 +84,7 @@
                 android:layout_height="128dp"
                 android:padding="8dp"
                 android:background="@color/white"
-                android:text="최소 시간"
+                android:text=""
                 android:textSize="16sp" />
 
             <TextView
@@ -92,7 +93,7 @@
                 android:layout_height="128dp"
                 android:padding="8dp"
                 android:background="@color/white"
-                android:text="최소 비용"
+                android:text=""
                 android:textSize="16sp" />
 
 
@@ -102,7 +103,7 @@
                 android:layout_height="128dp"
                 android:padding="8dp"
                 android:background="@color/white"
-                android:text="최소 환승"
+                android:text=""
                 android:textSize="16sp" />
 
 

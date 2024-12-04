@@ -52,18 +52,17 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         // JSON 데이터 로드 함수 추가
-        fun loadPathDataFromJson(): List<PathData> {
+        fun loadPathDataFromJson(): PathData? {
             return try {
                 val jsonString = requireContext().resources.openRawResource(R.raw.example_path_data)
                     .bufferedReader()
                     .use { it.readText() }
 
                 val gson = Gson()
-                val listType = object : TypeToken<List<PathData>>() {}.type
-                gson.fromJson(jsonString, listType)
+                gson.fromJson(jsonString, PathData::class.java)
             } catch (e: IOException) {
                 e.printStackTrace()
-                emptyList()
+                null
             }
         }
 
@@ -98,10 +97,24 @@ class HomeFragment : Fragment() {
             }
 
             // JSON 데이터 확인
-            val pathDataList = loadPathDataFromJson()
-            val matchedData = pathDataList.filter {
-                it.startStation.toString() == startInput.text.toString() && it.endStation.toString() == destinationInput.text.toString()
+            val pathData = loadPathDataFromJson()
+
+            if (pathData == null) {
+                Toast.makeText(context, "데이터를 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+
+// Start와 End가 shortestPath 또는 cheapestPath와 일치하는지 필터링
+            val matchedData = listOfNotNull(
+                pathData.shortestPath?.takeIf {
+                    it.startStation.toString() == startInput.text.toString() &&
+                            it.endStation.toString() == destinationInput.text.toString()
+                },
+                pathData.cheapestPath?.takeIf {
+                    it.startStation.toString() == startInput.text.toString() &&
+                            it.endStation.toString() == destinationInput.text.toString()
+                }
+            )
 
             if (matchedData.isEmpty()) {
                 Toast.makeText(context, "해당 경로를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
