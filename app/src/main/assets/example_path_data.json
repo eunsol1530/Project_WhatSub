@@ -1,0 +1,46 @@
+[
+  {
+    "startStation": 102,
+    "endStation": 201,
+    "totalTime": "20분 0초",
+    "totalCost": "500원",
+    "transfers": [
+      {
+        "fromStation": 102,
+        "toStation": 101,
+        "lineNumber": 1,
+        "timeOnLine": "3분 20초",
+        "costOnLine": "200원"
+      },
+      {
+        "fromStation": 101,
+        "toStation": 201,
+        "lineNumber": 2,
+        "timeOnLine": "16분 40초",
+        "costOnLine": "300원"
+      }
+    ]
+  },
+  {
+    "startStation": 102,
+    "endStation": 201,
+    "totalTime": "25분 40초",
+    "totalCost": "3,000원",
+    "transfers": [
+      {
+        "fromStation": 102,
+        "toStation": 101,
+        "lineNumber": 1,
+        "timeOnLine": "3분 20초",
+        "costOnLine": "1,000원"
+      },
+      {
+        "fromStation": 101,
+        "toStation": 201,
+        "lineNumber": 2,
+        "timeOnLine": "22분 20초",
+        "costOnLine": "2,000원"
+      }
+    ]
+  }
+]

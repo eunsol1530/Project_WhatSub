@@ -7,18 +7,6 @@
     android:layout_height="match_parent"
     tools:context=".ui.home.HomeFragment">
 
-    <TextView
-        android:id="@+id/text_search"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Search Fragment"
-        android:textSize="18sp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_gravity="center"/>
-
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/search_path"
         android:layout_width="match_parent"
@@ -92,13 +80,13 @@
             android:textSize="18sp"
             android:layout_gravity="center"
             android:letterSpacing="0.05"
-            app:layout_constraintEnd_toStartOf="@id/min_time_dropdown"
+            app:layout_constraintEnd_toStartOf="@id/sort_way_dropdown"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 
-        <ImageButton
-            android:id="@+id/min_time_dropdown"
+        <ImageView
+            android:id="@+id/sort_way_dropdown"
             android:layout_width="25dp"
             android:layout_height="25dp"
             android:scaleType="fitCenter"
@@ -114,8 +102,6 @@
     </LinearLayout>
 
 
-
-
     <TextView
         android:id="@+id/research_btn"
         android:layout_width="wrap_content"
@@ -126,8 +112,20 @@
         app:layout_constraintTop_toTopOf="@id/sort"
         app:layout_constraintBottom_toBottomOf="@id/sort"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="50dp"/>
+        android:layout_marginEnd="75dp"/>
 
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewPath"
+            android:layout_width="match_parent"
+            android:layout_height="520dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintTop_toBottomOf="@id/sort_background_vi"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:background="@color/white"
+            android:clipToPadding="false"
+            android:scrollbars="vertical"
+            android:elevation="4dp"/>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

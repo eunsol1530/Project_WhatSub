@@ -8,4 +8,7 @@
     <string name="search_button">Search Paths</string>
     <string name="title_search">search</string>
     <string name="select_sort_option">정렬 옵션 선택</string>
+    <string name="total_time">총 시간: %1$s</string>
+    <string name="total_cost">총 비용: %1$s</string>
+    <string name="transfers">환승 정보: %1$s</string>
 </resources>
