@@ -68,57 +68,49 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                115.dp
+                120.dp
             ).apply {
-                setMargins(16.dp, 8.dp, 16.dp, 8.dp)
+                setMargins(0, 8.dp, 0, 4.dp)
             }
             setBackgroundColor(Color.parseColor("#ffffff"))
+        }
+
+        // 구분 선 추가
+        val divider = View(requireContext()).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                1.dp // 선의 두께
+            ).apply {
+                setMargins(0, 0, 0, 0)
+            }
+            setBackgroundColor(Color.LTGRAY) // 선의 색상
+        }
+        routeView.addView(divider)
+
+        // 라벨과 즐겨찾기 버튼을 포함하는 컨테이너
+        val headerContainer = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL // 수직 중앙 정렬
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(16.dp, 0, 10.dp, 0)
+            }
         }
 
         // 라벨 (최소 시간/최소 비용/최소 환승)
         val labelTextView = TextView(requireContext()).apply {
             text = label
             textSize = 12f
-            setPadding(8.dp, 4.dp, 8.dp, 4.dp)
             setTypeface(null, Typeface.BOLD)
-        }
-        routeView.addView(labelTextView)
-// 총 시간, 총 비용, 즐겨찾기 버튼을 포함할 컨테이너
-        val infoContainer = LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            gravity = Gravity.CENTER_VERTICAL // 수직 중앙 정렬
-        }
-
-        // 총 시간 텍스트
-        val totalTimeTextView = TextView(requireContext()).apply {
-            text = "${path.totalTime}"
-            textSize = 18f
-            layoutParams = LinearLayout.LayoutParams(
-                0, // 남은 공간 균등 배분
+                0,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f // 가중치
+                0.1F
             )
-            setPadding(8.dp, 4.dp, 0, 4.dp)
-            setTypeface(null, Typeface.BOLD) // 폰트 두껍게 설정
         }
-        infoContainer.addView(totalTimeTextView)
-
-        // 총 비용 텍스트
-        val totalCostTextView = TextView(requireContext()).apply {
-            text = "${path.totalCost}"
-            textSize = 12f
-            layoutParams = LinearLayout.LayoutParams(
-                0, // 남은 공간 균등 배분
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f // 가중치
-            )
-            setPadding(0, 4.dp, 8.dp, 4.dp)
-        }
-        infoContainer.addView(totalCostTextView)
+        headerContainer.addView(labelTextView)
 
         // 즐겨찾기 버튼
         val favoriteButton = ImageButton(requireContext()).apply {
@@ -126,7 +118,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 40.dp,
                 40.dp
             ).apply {
-                setMargins(8.dp, 0, 8.dp, 0)
+                setMargins(16.dp, 4.dp, 0, 0)
             }
             setImageResource(R.drawable.icon_favorites_blank)
             scaleType = ImageView.ScaleType.FIT_CENTER // 버튼 안에서 축소 및 중앙 배치
@@ -148,7 +140,48 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 }
             }
         }
-        infoContainer.addView(favoriteButton)
+        headerContainer.addView(favoriteButton)
+
+        routeView.addView(headerContainer)
+
+
+// 총 시간, 총 비용을 포함할 컨테이너
+        val infoContainer = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        // 총 시간 텍스트
+        val totalTimeTextView = TextView(requireContext()).apply {
+            text = "${path.totalTime}"
+            textSize = 16f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.BOTTOM // 하단 정렬
+            }
+            setPadding(16.dp, 0, 8.dp, 8.dp)
+            setTypeface(null, Typeface.BOLD) // 폰트 두껍게 설정
+        }
+        infoContainer.addView(totalTimeTextView)
+
+        // 총 비용 텍스트
+        val totalCostTextView = TextView(requireContext()).apply {
+            text = "${path.totalCost}"
+            textSize = 12f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.BOTTOM // 하단 정렬
+            }
+            setPadding(0, 4.dp, 8.dp, 8.dp)
+        }
+        infoContainer.addView(totalCostTextView)
 
         // infoContainer를 routeView에 추가
         routeView.addView(infoContainer)
@@ -161,7 +194,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 8.dp, 0, 8.dp) // 상하 여백
+                setMargins(0, 0, 0, 0) // 상하 여백
             }
         }
 
@@ -175,18 +208,61 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 // 총 시간의 분 단위로 비율 계산
         val totalMinutes = path.segments.sumOf { it.timeOnLine.extractMinutes() }
         path.segments.forEachIndexed { index, segment ->
-            // 각 구간의 비율
-            val widthRatio = segment.timeOnLine.extractMinutes().toFloat() / totalMinutes
+            // 출발 지점 추가
+            if (index == 0) {
+                val startStationView = LinearLayout(requireContext()).apply {
+                    orientation = LinearLayout.VERTICAL
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(16.dp, 0, 0, 0) // 아이콘과 라인 간격 조정
+                    }
+                    setBackgroundColor(Color.WHITE) // 배경 설정
+                    gravity = Gravity.CENTER
+                }
 
-            // 각 구간 뷰
+                val startIcon = ImageView(requireContext()).apply {
+                    setImageResource(R.drawable.icon_transfer) // 환승 아이콘
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    layoutParams = LinearLayout.LayoutParams(
+                        31.dp,
+                        31.dp
+                    )
+                }
+                startStationView.addView(startIcon)
+
+                val startStationText = TextView(requireContext()).apply {
+                    text = "${segment.fromStation}"
+                    textSize = 8f // 텍스트 크기
+                    setTextColor(Color.BLACK) // 텍스트 색상
+                    setTypeface(null, Typeface.BOLD) // 텍스트 두껍게
+                    gravity = Gravity.CENTER // 중앙 정렬
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                }
+                startStationText.elevation = 10f // 우선순위 높임
+
+                Log.d("StationDebug", "startStationText=${startStationText.text}")
+
+                startStationView.addView(startStationText)
+
+                routeContainer.addView(startStationView)
+                Log.d("RouteContainer", "Child count: ${routeContainer.childCount}")
+
+            }
+
+            // 각 구간 비율 및 역 정보 추가
             val segmentView = LinearLayout(requireContext()).apply {
                 orientation = LinearLayout.VERTICAL
                 layoutParams = LinearLayout.LayoutParams(
                     0, // 비율에 따라 동적으로 설정
                     LinearLayout.LayoutParams.WRAP_CONTENT,
-                    widthRatio // 가중치로 비율 반영
+                    segment.timeOnLine.extractMinutes().toFloat() / totalMinutes // 가중치로 비율 반영
                 ).apply {
-                    setMargins(0, 0, 0, 0)
+                    setMargins(0, 8.dp, 0, 0)
                 }
             }
 
@@ -195,12 +271,12 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 text = "${segment.lineNumber}호선"
                 textSize = 8f
                 setBackgroundColor(getLineBackground(segment.lineNumber)) // 호선별 배경
-                setPadding(4.dp, 2.dp, 4.dp, 2.dp)
+                setPadding(4.dp, 0, 4.dp, 0)
                 gravity = Gravity.CENTER
             }
             segmentView.addView(lineTextView)
 
-            // 소요 시간 정보
+           // 소요 시간 정보
             val timeTextView = TextView(requireContext()).apply {
                 text = segment.timeOnLine
                 textSize = 10f
@@ -210,24 +286,81 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
             routeContainer.addView(segmentView)
 
-            // 환승 아이콘 추가
+            // 환승 아이콘 및 역 이름 추가
             if (index < path.segments.size - 1) {
-                val transferIcon = ImageView(requireContext()).apply {
+                val transferView = LinearLayout(requireContext()).apply {
+                    orientation = LinearLayout.VERTICAL
                     layoutParams = LinearLayout.LayoutParams(
-                        30.dp,
-                        30.dp
+                        31.dp,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
                     ).apply {
-                        gravity = Gravity.CENTER_VERTICAL
-                        setMargins(0, 0, 0, 4.dp)
+                        setMargins(0, 0, 0, 0)
                     }
-                    setImageResource(R.drawable.icon_transfer) // 환승 아이콘
-                    setBackgroundColor(Color.TRANSPARENT) // 배경 투명
-                    scaleType = ImageView.ScaleType.FIT_CENTER // 버튼 안에서 축소 및 중앙 배치
-
+                    gravity = Gravity.CENTER
                 }
-                routeContainer.addView(transferIcon)
+
+                val transferIcon = ImageView(requireContext()).apply {
+                    setImageResource(R.drawable.icon_transfer) // 환승 아이콘
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    layoutParams = LinearLayout.LayoutParams(
+                        31.dp,
+                        31.dp
+                    )
+                }
+                transferView.addView(transferIcon)
+
+                val transferText = TextView(requireContext()).apply {
+                    text = if (segment.toStation != 0) "${segment.toStation}" else "환승역 미지정"
+                    textSize = 8f
+                    setTextColor(Color.BLACK) // 텍스트 색상 설정
+                    setTypeface(null, Typeface.BOLD)
+                    gravity = Gravity.CENTER
+                }
+
+                Log.d("StationDebug", "transferText=${transferText.text}")
+
+                transferView.addView(transferText)
+
+                routeContainer.addView(transferView)
+            }
+
+            // 도착 지점 추가
+            if (index == path.segments.size - 1) {
+                val endStationView = LinearLayout(requireContext()).apply {
+                    orientation = LinearLayout.VERTICAL
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                    ).apply {
+                        setMargins(0, 0, 16.dp, 0)
+                    }
+                    gravity = Gravity.CENTER
+                }
+
+                val endIcon = ImageView(requireContext()).apply {
+                    setImageResource(R.drawable.icon_transfer) // 환승 아이콘
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    layoutParams = LinearLayout.LayoutParams(
+                        31.dp,
+                        31.dp
+                    )
+                }
+                endStationView.addView(endIcon)
+
+                val endStationText = TextView(requireContext()).apply {
+                    text = if (segment.toStation != 0) "${segment.toStation}" else "도착역 미지정"
+                    textSize = 8f
+                    setTextColor(Color.BLACK) // 텍스트 색상 설정
+                    setTypeface(null, Typeface.BOLD)
+                    gravity = Gravity.CENTER
+                }
+                Log.d("StationDebug", "endStationText=${endStationText.text}")
+                endStationView.addView(endStationText)
+
+                routeContainer.addView(endStationView)
             }
         }
+
         routeView.addView(routeContainer)
 
         return routeView

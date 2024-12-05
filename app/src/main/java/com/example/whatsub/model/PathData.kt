@@ -7,8 +7,8 @@ data class TransferPath(
 )
 
 data class Transfer(
-    val fromStation: Int,
-    val toStation: Int,
+    val fromStation: Int = 0,
+    val toStation: Int = 0,
     val lineNumber: Int,
     val timeOnLine: String,
     val costOnLine: String,
