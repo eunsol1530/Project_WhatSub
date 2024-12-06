@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp"
+    android:background="@color/white">
+
+    <TextView
+        android:id="@+id/fromStation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="출발역" />
+
+    <TextView
+        android:id="@+id/toStation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="도착역" />
+
+    <TextView
+        android:id="@+id/lineNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="호선" />
+
+    <TextView
+        android:id="@+id/timeOnLine"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="소요 시간" />
+
+    <TextView
+        android:id="@+id/costOnLine"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="비용" />
+
+    <TextView
+        android:id="@+id/toiletCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="화장실" />
+
+    <TextView
+        android:id="@+id/storeCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="편의점" />
+
+</LinearLayout>

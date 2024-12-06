@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/detail_path"
+        android:layout_width="match_parent"
+        android:layout_height="170dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+
+            <TextView
+                android:id="@+id/start_location"
+                android:layout_width="140dp"
+                android:layout_height="50dp"
+                android:background="@drawable/img_home_search_back"
+                android:text="출발지"
+                android:textSize="18dp"
+                android:inputType="text"
+                android:gravity="center"
+                android:layout_marginTop="60dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginStart="30dp" />
+
+            <ImageView
+                android:id="@+id/arrow_img"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/img_detail_path_arrow"
+                android:scaleType="fitCenter"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/exchange_button"
+                app:layout_constraintStart_toEndOf="@id/start_location"
+                app:layout_constraintEnd_toStartOf="@id/destination_location"
+                app:layout_constraintTop_toTopOf="@id/start_location"
+                app:layout_constraintBottom_toBottomOf="@id/destination_location" />
+
+            <TextView
+                android:id="@+id/destination_location"
+                android:layout_width="140dp"
+                android:layout_height="50dp"
+                android:background="@drawable/img_home_search_back"
+                android:text="도착지"
+                android:inputType="text"
+                android:textSize="18dp"
+                android:gravity="center"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginEnd="30dp"
+                android:layout_marginTop="60dp"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        <View
+            android:id="@+id/path_top_divider_vi"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:background="#BDBDBD"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/destination_location"
+            android:layout_marginTop="55dp"/>
+
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/detail_path_info"
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        app:layout_constraintTop_toTopOf="@id/detail_path"
+        app:layout_constraintStart_toStartOf = "parent"
+        android:layout_marginTop="10dp">
+
+        <!-- 뒤로가기 버튼 -->
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/icon_back"
+            android:contentDescription="뒤로가기"
+            android:scaleType="fitCenter"
+            android:background="@color/white"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="20dp"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="10dp"/>
+
+        <!-- 경로 유형 -->
+        <TextView
+            android:id="@+id/routeTypeTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="경로 유형"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@id/backButton"
+            app:layout_constraintStart_toEndOf = "@id/backButton"
+            android:layout_marginStart="15dp"
+            android:layout_marginBottom="-3dp"
+            tools:ignore="MissingConstraints" />
+
+        <!-- 총 시간 -->
+        <TextView
+            android:id="@+id/totalTimeTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="총 시간"
+            android:textStyle="bold"
+            android:textSize="24sp"
+            app:layout_constraintTop_toTopOf="@id/backButton"
+            app:layout_constraintStart_toStartOf = "parent"
+            android:layout_marginTop="30dp"
+            android:layout_marginStart="20dp"/>
+
+        <!-- 총 비용 -->
+        <TextView
+            android:id="@+id/totalCostTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="총 비용"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toBottomOf="@id/totalTimeTextView"
+            app:layout_constraintStart_toEndOf ="@id/totalTimeTextView"
+            android:layout_marginStart="20dp"
+            android:layout_marginBottom="2dp"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    <!-- 경로 상세 정보 표시 -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:id="@+id/routeDetailContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp" />
+    </ScrollView>
+</LinearLayout>

@@ -37,11 +37,12 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         return try {
             val jsonString = requireContext().resources.openRawResource(R.raw.example_path_data)
                 .bufferedReader().use { it.readText() }
+            Log.d("SearchFragment", "Loaded JSON data: $jsonString")
 
             val gson = Gson()
             gson.fromJson(jsonString, PathData::class.java)
         } catch (e: IOException) {
-            e.printStackTrace()
+            Log.e("SearchFragment", "Error loading JSON data", e)
             PathData(null, null, null) // 기본값으로 빈 PathData 반환
         }
     }
@@ -103,6 +104,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         val labelTextView = TextView(requireContext()).apply {
             text = label
             textSize = 12f
+            setTextColor(Color.DKGRAY)
             setTypeface(null, Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(
                 0,
@@ -158,6 +160,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         val totalTimeTextView = TextView(requireContext()).apply {
             text = "${path.totalTime}"
             textSize = 16f
+            setTextColor(Color.DKGRAY) // 텍스트 색상 설정
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -188,7 +191,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
 
         // 경로 표시 영역
-        val routeContainer = LinearLayout(requireContext()).apply {
+        val routeItemContainer = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -249,8 +252,8 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
                 startStationView.addView(startStationText)
 
-                routeContainer.addView(startStationView)
-                Log.d("RouteContainer", "Child count: ${routeContainer.childCount}")
+                routeItemContainer.addView(startStationView)
+                Log.d("RouteContainer", "Child count: ${routeItemContainer.childCount}")
 
             }
 
@@ -270,6 +273,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             val lineTextView = TextView(requireContext()).apply {
                 text = "${segment.lineNumber}호선"
                 textSize = 8f
+                setTextColor(Color.WHITE)
                 setBackgroundColor(getLineBackground(segment.lineNumber)) // 호선별 배경
                 setPadding(4.dp, 0, 4.dp, 0)
                 gravity = Gravity.CENTER
@@ -284,7 +288,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             }
             segmentView.addView(timeTextView)
 
-            routeContainer.addView(segmentView)
+            routeItemContainer.addView(segmentView)
 
             // 환승 아이콘 및 역 이름 추가
             if (index < path.segments.size - 1) {
@@ -321,7 +325,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
                 transferView.addView(transferText)
 
-                routeContainer.addView(transferView)
+                routeItemContainer.addView(transferView)
             }
 
             // 도착 지점 추가
@@ -357,15 +361,29 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 Log.d("StationDebug", "endStationText=${endStationText.text}")
                 endStationView.addView(endStationText)
 
-                routeContainer.addView(endStationView)
+                routeItemContainer.addView(endStationView)
+
+                routeView.addView(routeItemContainer)
             }
         }
 
-        routeView.addView(routeContainer)
+        // 경로 데이터를 태그로 저장
+        routeView.tag = path
+
+        // 클릭 리스너 추가
+        routeView.setOnClickListener {
+            Log.d("RouteViewClick", "RouteView clicked with data: $path")
+            val bundle = Bundle().apply {
+                putString("routeType", label) // 라벨 정보 전달
+                putSerializable("routeData", path) // TransferPath 전달
+            }
+            Log.d("NavigationDebug", "routeType: $label, routeData: $path")
+            findNavController().navigate(R.id.action_searchFragment_to_detailFragment, bundle)
+            Log.d("createRouteView", "Navigating to DetailFragment with routeData: $path")
+        }
 
         return routeView
     }
-
 
     // 즐겨찾기 삭제 함수
     private fun removeFromFavorites(route: TransferPath) {
@@ -428,13 +446,45 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
     }
 
 
+    private fun displayRoutes(pathData: PathData, routeContainer: LinearLayout) {
+        // 기존 뷰 모두 삭제
+        routeContainer.removeAllViews()
+
+        // 최소 시간 경로 추가
+        pathData.shortestPath?.let { shortestPath ->
+            val shortestPathView = createRouteView(shortestPath, "최소 시간")
+            routeContainer.addView(shortestPathView)
+            Log.d("RouteContainer", "Added ShortestPath View")
+        }
+
+        // 최소 비용 경로 추가
+        pathData.cheapestPath?.let { cheapestPath ->
+            val cheapestPathView = createRouteView(cheapestPath, "최소 비용")
+            routeContainer.addView(cheapestPathView)
+            Log.d("RouteContainer", "Added CheapestPath View")
+        }
+
+        // 최소 환승 경로 추가
+        pathData.leastTransfersPath?.paths?.forEachIndexed { index, transferPath ->
+            val leastTransfersPathView = createRouteView(transferPath, "최소 환승 (${index + 1})")
+            routeContainer.addView(leastTransfersPathView)
+            Log.d("RouteContainer", "Added LeastTransfersPath View for index $index")
+        }
+
+        // 현재 컨테이너에 추가된 뷰 개수 확인
+        Log.d("RouteContainer", "Final Child Count: ${routeContainer.childCount}")
+    }
+
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
 
 
         // arguments로 전달받은 데이터 가져오기
         val startLocation = arguments?.getString("startLocation") ?: "출발지가 없습니다"
         val destinationLocation = arguments?.getString("destinationLocation") ?: "도착지가 없습니다"
+
 
         // Log 추가
         Log.d("SearchFragment", "Received arguments: startLocation=$startLocation, destinationLocation=$destinationLocation")
@@ -450,6 +500,12 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         val destinationInput: EditText = view.findViewById(R.id.destination_location)
         val routeContainer: LinearLayout = view.findViewById(R.id.routeContainer)
 
+        if (routeContainer == null) {
+            Log.e("SearchFragment", "routeContainer is null! Check fragment_search.xml")
+            return
+        } else {
+            Log.d("SearchFragment", "routeContainer initialized successfully!")
+        }
 
         // EditText 기본값 설정
         startInput.setText(startLocation)
@@ -458,6 +514,9 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         // JSON 데이터 불러오기
 
         val pathData = loadPathDataFromJson()
+
+        // displayRoutes 호출
+        displayRoutes(pathData, routeContainer)
 
         // 경로 데이터를 동적으로 추가
         fun displayRoutes(pathData: PathData) {
@@ -526,6 +585,5 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             }
 
         }
-
     }
 }

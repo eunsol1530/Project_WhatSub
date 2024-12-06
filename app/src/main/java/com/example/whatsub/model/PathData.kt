@@ -1,10 +1,12 @@
 package com.example.whatsub.model
 
+import java.io.Serializable
+
 data class TransferPath(
     val totalTime: String,
     val totalCost: String,
     val segments: List<Transfer>
-)
+) : Serializable
 
 data class Transfer(
     val fromStation: Int = 0,
@@ -14,7 +16,7 @@ data class Transfer(
     val costOnLine: String,
     val toiletCount: Int,
     val storeCount: Int
-)
+) : Serializable
 
 data class ShortestPath(
     val startStation: Int,
