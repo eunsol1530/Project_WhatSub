@@ -37,7 +37,7 @@
 
     <fragment
         android:id="@+id/navigation_news"
-        android:name="com.example.whatsub.ui.news.NewsFragment"
+        android:name="com.example.whatsub.HeadlinesFragment"
         android:label="News"
         tools:layout="@layout/fragment_news" />
 </navigation>
