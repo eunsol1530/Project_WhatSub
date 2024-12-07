@@ -4,39 +4,43 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import com.example.whatsub.databinding.FragmentGameBinding
+import com.example.whatsub.R
 
 class GameFragment : Fragment() {
 
-    private var _binding: FragmentGameBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
-    private val binding get() = _binding!!
+    private var webView: WebView? = null
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
+        inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View {
-        val gameViewModel =
-            ViewModelProvider(this).get(GameViewModel::class.java)
+    ): View? {
+        val view = inflater.inflate(R.layout.fragment_game, container, false)
 
-        _binding = FragmentGameBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-
-        val textView: TextView = binding.textGame
-        gameViewModel.text.observe(viewLifecycleOwner) {
-            textView.text = it
+        // WebView 초기화
+        webView = view.findViewById(R.id.webView)
+        webView?.apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            webViewClient = WebViewClient()
+            loadUrl("https://pinball.flutter.dev/#/")
         }
-        return root
+
+        return view
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
+        // WebView 리소스 해제
+        webView?.apply {
+            loadUrl("about:blank")
+            clearHistory()
+            removeAllViews()
+            destroy()
+        }
+        webView = null
     }
 }

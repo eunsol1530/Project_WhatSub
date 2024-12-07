@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -6,6 +5,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- WebView가 들어갈 컨테이너 -->
+    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <WebView
+            android:id="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </FrameLayout>
+
+    <!-- 상단 로고 -->
     <ImageView
         android:id="@+id/top_logo_bar_iv"
         android:layout_width="match_parent"
@@ -13,6 +24,7 @@
         android:src="@drawable/logo_whatsub"
         app:layout_constraintTop_toTopOf="parent"/>
 
+    <!-- 네비게이션 바 -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/nav_view"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -28,9 +40,10 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"/>
 
+        <!-- 홈 아이콘 -->
         <ImageButton
             android:id="@+id/nav_icon_home_ib"
-            android:layout_width="30dp"
+            android:layout_width="0dp"
             android:layout_height="30dp"
             android:src="@drawable/icon_home"
             android:background="@color/white"
@@ -40,9 +53,10 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"/>
 
+        <!-- 즐겨찾기 아이콘 -->
         <ImageButton
             android:id="@+id/nav_icon_favorites_ib"
-            android:layout_width="30dp"
+            android:layout_width="0dp"
             android:layout_height="30dp"
             android:src="@drawable/icon_favorites"
             android:background="@color/white"
@@ -52,9 +66,10 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
+        <!-- 게임 아이콘 -->
         <ImageButton
             android:id="@+id/nav_icon_game_ib"
-            android:layout_width="30dp"
+            android:layout_width="0dp"
             android:layout_height="30dp"
             android:src="@drawable/icon_game"
             android:background="@color/white"
@@ -64,9 +79,10 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
+        <!-- 뉴스 아이콘 -->
         <ImageButton
             android:id="@+id/nav_icon_news_ib"
-            android:layout_width="30dp"
+            android:layout_width="0dp"
             android:layout_height="30dp"
             android:src="@drawable/icon_news"
             android:background="@color/white"
@@ -78,6 +94,7 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <!-- Fragment를 포함할 부분 -->
     <fragment
         android:id="@+id/nav_host_fragment_activity_main"
         android:name="androidx.navigation.fragment.NavHostFragment"
