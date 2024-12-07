@@ -34,14 +34,16 @@ data class CheapestPath(
     val transfers: List<Transfer>
 )
 
-data class LeastTransfersPath(
-    val totalTransfers: Int,
+data class Path(
+    val startStation: Int,
+    val endStation: Int,
+    val totalTransfers: Int? = null,
     val paths: List<TransferPath>
 )
 
-
 data class PathData(
-    val shortestPath: ShortestPath?,
-    val cheapestPath: CheapestPath?,
-    val leastTransfersPath: LeastTransfersPath?
+    val shortestPath: Path?,
+    val cheapestPath: Path?,
+    val leastTransfersPath: Path?,
+    val comparisonResult: Int // 비교 결과
 )

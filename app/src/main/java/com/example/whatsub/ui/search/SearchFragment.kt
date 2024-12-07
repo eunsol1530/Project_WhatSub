@@ -37,15 +37,15 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         return try {
             val jsonString = requireContext().resources.openRawResource(R.raw.example_path_data)
                 .bufferedReader().use { it.readText() }
-            Log.d("SearchFragment", "Loaded JSON data: $jsonString")
 
             val gson = Gson()
             gson.fromJson(jsonString, PathData::class.java)
         } catch (e: IOException) {
-            Log.e("SearchFragment", "Error loading JSON data", e)
-            PathData(null, null, null) // 기본값으로 빈 PathData 반환
+            e.printStackTrace()
+            PathData(null, null, null, 0) // 기본값으로 반환
         }
     }
+
 
     private fun getLineBackground(lineNumber: Int): Int {
         return when (lineNumber) {
@@ -202,11 +202,27 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         }
 
         fun String.extractMinutes(): Int {
-            val timeParts = this.split("시간", "분", "초").mapNotNull { it.trim().toIntOrNull() }
-            val hours = if (timeParts.size > 1) timeParts[0] else 0
-            val minutes = timeParts.getOrElse(timeParts.size - 1) { 0 }
-            return hours * 60 + minutes
+            val regex = "(\\d+)시간".toRegex()
+            val hours = regex.find(this)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+
+            val minutesRegex = "(\\d+)분".toRegex()
+            val minutes = minutesRegex.find(this)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+
+            val secondsRegex = "(\\d+)초".toRegex()
+            val seconds = secondsRegex.find(this)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+
+            return (hours * 60) + minutes + (seconds / 60)
         }
+
+        fun String.formatTimeWithoutSeconds(): String {
+            val regex = "(\\d+시간)?\\s*(\\d+분)?".toRegex()
+            val matchResult = regex.find(this)
+            val hours = matchResult?.groupValues?.get(1)?.trim() ?: ""
+            val minutes = matchResult?.groupValues?.get(2)?.trim() ?: ""
+
+            return listOf(hours, minutes).filter { it.isNotEmpty() }.joinToString(" ")
+        }
+
 
 // 총 시간의 분 단위로 비율 계산
         val totalMinutes = path.segments.sumOf { it.timeOnLine.extractMinutes() }
@@ -271,7 +287,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
             // 호선 정보
             val lineTextView = TextView(requireContext()).apply {
-                text = "${segment.lineNumber}호선"
+                text = "${segment.lineNumber}"
                 textSize = 8f
                 setTextColor(Color.WHITE)
                 setBackgroundColor(getLineBackground(segment.lineNumber)) // 호선별 배경
@@ -282,7 +298,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
            // 소요 시간 정보
             val timeTextView = TextView(requireContext()).apply {
-                text = segment.timeOnLine
+                text = segment.timeOnLine.formatTimeWithoutSeconds() // 초 제거된 문자열 적용
                 textSize = 10f
                 gravity = Gravity.CENTER
             }
@@ -447,33 +463,46 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
 
     private fun displayRoutes(pathData: PathData, routeContainer: LinearLayout) {
-        // 기존 뷰 모두 삭제
-        routeContainer.removeAllViews()
+        routeContainer.removeAllViews() // 기존 View 초기화
+
+        // 비교 결과를 기반으로 겹치는 경로 판별
+        val comparisonResult = pathData.comparisonResult
+
+        var shortestPathLabel = "최소 시간"
+        var cheapestPathLabel = "최소 비용"
+        var leastTransfersLabel = "최소 환승"
+
+        // 겹치는 경로에 따라 라벨 업데이트
+        when (comparisonResult) {
+            1 -> shortestPathLabel += " & 최소비용" // 최소 시간과 최소 비용이 겹침
+            2 -> cheapestPathLabel += " & 최소환승" // 최소 비용과 최소 환승이 겹침
+            3 -> shortestPathLabel += " & 최소환승" // 최소 시간과 최소 환승이 겹침
+            4 -> shortestPathLabel += " & 최소비용 & 최소환승" // 모두 겹침
+        }
 
         // 최소 시간 경로 추가
-        pathData.shortestPath?.let { shortestPath ->
-            val shortestPathView = createRouteView(shortestPath, "최소 시간")
-            routeContainer.addView(shortestPathView)
-            Log.d("RouteContainer", "Added ShortestPath View")
+        pathData.shortestPath?.paths?.forEachIndexed { index, path ->
+            if (comparisonResult == 3 || comparisonResult == 4) return@forEachIndexed // 겹치는 경우 제외
+            val routeView = createRouteView(path, shortestPathLabel)
+            routeContainer.addView(routeView)
         }
 
         // 최소 비용 경로 추가
-        pathData.cheapestPath?.let { cheapestPath ->
-            val cheapestPathView = createRouteView(cheapestPath, "최소 비용")
-            routeContainer.addView(cheapestPathView)
-            Log.d("RouteContainer", "Added CheapestPath View")
+        pathData.cheapestPath?.paths?.forEachIndexed { index, path ->
+            if (comparisonResult == 1 || comparisonResult == 4) return@forEachIndexed // 겹치는 경우 제외
+            val routeView = createRouteView(path, cheapestPathLabel)
+            routeContainer.addView(routeView)
         }
 
         // 최소 환승 경로 추가
-        pathData.leastTransfersPath?.paths?.forEachIndexed { index, transferPath ->
-            val leastTransfersPathView = createRouteView(transferPath, "최소 환승 (${index + 1})")
-            routeContainer.addView(leastTransfersPathView)
-            Log.d("RouteContainer", "Added LeastTransfersPath View for index $index")
+        pathData.leastTransfersPath?.paths?.forEachIndexed { index, path ->
+            if (comparisonResult == 2 || comparisonResult == 3 || comparisonResult == 4) return@forEachIndexed // 겹치는 경우 제외
+            val routeView = createRouteView(path, leastTransfersLabel)
+            routeContainer.addView(routeView)
         }
-
-        // 현재 컨테이너에 추가된 뷰 개수 확인
-        Log.d("RouteContainer", "Final Child Count: ${routeContainer.childCount}")
     }
+
+
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -522,18 +551,19 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         fun displayRoutes(pathData: PathData) {
             routeContainer.removeAllViews() // 기존 View 초기화
 
-            pathData.shortestPath?.let { shortestPath ->
-                routeContainer.addView(createRouteView(shortestPath, label = "최소 시간"))
+            pathData.shortestPath?.paths?.forEachIndexed { index, path ->
+                val routeView = createRouteView(path, "최소 시간 (${index + 1})")
+                routeContainer.addView(routeView)
             }
 
-            pathData.cheapestPath?.let { cheapestPath ->
-                routeContainer.addView(createRouteView(cheapestPath, label = "최소 비용"))
+            pathData.cheapestPath?.paths?.forEachIndexed { index, path ->
+                val routeView = createRouteView(path, "최소 비용 (${index + 1})")
+                routeContainer.addView(routeView)
             }
 
-            pathData.leastTransfersPath?.paths?.forEachIndexed { index, transferPath ->
-                routeContainer.addView(
-                    createRouteView(transferPath, label = "최소 환승 (${index + 1})")
-                )
+            pathData.leastTransfersPath?.paths?.forEachIndexed { index, path ->
+                val routeView = createRouteView(path, "최소 환승 (${index + 1})")
+                routeContainer.addView(routeView)
             }
         }
         Log.d("displayRoutes", "ShortestPath: ${pathData.shortestPath}")
@@ -574,16 +604,29 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             val newStart = startInput.text.toString()
             val newDestination = destinationInput.text.toString()
 
+            // 출발지와 도착지에 값이 없을 경우
             if (newStart.isBlank() || newDestination.isBlank()) {
                 Toast.makeText(requireContext(), "출발지와 도착지를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
+            // 출발지와 도착지가 동일할 경우
             if (newStart == newDestination) {
                 Toast.makeText(context, "출발지와 도착지가 동일합니다. 다시 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
+            // 경로 탐색을 시작
+            Log.d("ResearchButton", "Start: $newStart, Destination: $newDestination")
+
+            // 새로운 JSON 데이터 로드 (예시로 동일한 JSON 로드 사용)
+            val updatedPathData = loadPathDataFromJson()
+
+            // RouteContainer 초기화 후 새 데이터로 업데이트
+            routeContainer.removeAllViews()
+            displayRoutes(updatedPathData, routeContainer)
+
+            Toast.makeText(requireContext(), "새로운 경로를 탐색했습니다.", Toast.LENGTH_SHORT).show()
         }
     }
 }

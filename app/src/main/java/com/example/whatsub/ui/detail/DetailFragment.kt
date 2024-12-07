@@ -65,14 +65,15 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
             "Updated UI with routeType: $routeType, totalTime: ${routeData.totalTime}, totalCost: ${routeData.totalCost}"
         )
 
-        // 컨테이너 초기화
+        // 경로 세부 정보 표시
         val container = requireView().findViewById<LinearLayout>(R.id.routeDetailContainer)
         container.removeAllViews()
 
         val totalMinutes = routeData.segments.sumOf { parseTimeToMinutes(it.timeOnLine) }
 
+        // 각 세그먼트를 동적으로 추가
         routeData.segments.forEachIndexed { index, segment ->
-            // 출발역 및 환승 아이콘 추가
+            // 첫 번째 역(출발역) 추가
             if (index == 0) {
                 val startContainer = createStationContainer(
                     iconRes = R.drawable.icon_transfer,
@@ -87,26 +88,27 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
             val segmentView = createSegmentView(segment, totalMinutes)
             container.addView(segmentView)
 
-            // 환승 정보 추가
+            // 중간에 환승 정보 추가
             if (index < routeData.segments.size - 1) {
                 val transferContainer = createStationContainer(
                     iconRes = R.drawable.icon_transfer,
-                    stationName = segment.toStation.toString()
+                    stationName = segment.toStation.toString(),
+                    //toiletCount = null, // 환승역에 화장실/편의점 정보 없음
+                    //storeCount = null
                 )
                 container.addView(transferContainer)
             }
 
-            // 도착역 정보 추가
-            if (index == routeData.segments.size - 1) {
-                val endContainer = createStationContainer(
-                    iconRes = R.drawable.icon_transfer,
-                    stationName = segment.toStation.toString(),
-                    toiletCount = segment.toiletCount,
-                    storeCount = segment.storeCount
-                )
-                container.addView(endContainer)
-            }
         }
+        // 마지막 도착역 정보 추가
+        val lastSegment = routeData.segments.last()
+        val endContainer = createStationContainer(
+            iconRes = R.drawable.icon_transfer,
+            stationName = lastSegment.toStation.toString(),
+            toiletCount = lastSegment.toiletCount,
+            storeCount = lastSegment.storeCount
+        )
+        container.addView(endContainer)
 
     }
 
@@ -124,7 +126,7 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
 // 노선 라인의 높이를 비율에 따라 설정
         val segmentTime = parseTimeToMinutes(segment.timeOnLine)
         val lineHeight = if (totalMinutes > 0) {
-            (segmentTime.toFloat() / totalMinutes * 700).toInt() // 비율 기반 높이 계산 (예: 1000dp 기준)
+            (segmentTime.toFloat() / totalMinutes * 600).toInt() // 비율 기반 높이 계산 (예: 1000dp 기준)
         } else {
             100 // 기본값
         }
@@ -289,7 +291,7 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
             }
 
             val toiletText = TextView(requireContext()).apply {
-                text = "$it"
+                text = it.toString()
                 textSize = 16f
                 setTextColor(Color.GRAY)
                 layoutParams = LinearLayout.LayoutParams(
@@ -312,7 +314,7 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
             }
 
             val storeText = TextView(requireContext()).apply {
-                text = "$it"
+                text = it.toString()
                 textSize = 16f
                 setTextColor(Color.GRAY)
                 layoutParams = LinearLayout.LayoutParams(

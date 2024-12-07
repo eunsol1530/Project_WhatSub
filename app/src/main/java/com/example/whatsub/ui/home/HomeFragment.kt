@@ -57,14 +57,14 @@ class HomeFragment : Fragment() {
                 val jsonString = requireContext().resources.openRawResource(R.raw.example_path_data)
                     .bufferedReader()
                     .use { it.readText() }
-
-                val gson = Gson()
-                gson.fromJson(jsonString, PathData::class.java)
+                Gson().fromJson(jsonString, PathData::class.java)
             } catch (e: IOException) {
                 e.printStackTrace()
                 null
             }
         }
+
+
 
         // 출발지와 도착지 EditText
         val startInput: EditText = view.findViewById(R.id.start_input)
@@ -104,22 +104,22 @@ class HomeFragment : Fragment() {
                 return@setOnClickListener
             }
 
-// Start와 End가 shortestPath 또는 cheapestPath와 일치하는지 필터링
-            val matchedData = listOfNotNull(
-                pathData.shortestPath?.takeIf {
-                    it.startStation.toString() == startInput.text.toString() &&
-                            it.endStation.toString() == destinationInput.text.toString()
-                },
-                pathData.cheapestPath?.takeIf {
-                    it.startStation.toString() == startInput.text.toString() &&
-                            it.endStation.toString() == destinationInput.text.toString()
-                }
-            )
+            val comparisonResult = pathData.comparisonResult
+            val message = when (comparisonResult) {
+                0 -> "겹치는 경로 없음"
+                1 -> "시간과 비용 경로가 동일합니다."
+                2 -> "비용과 환승 경로가 동일합니다."
+                3 -> "환승과 시간 경로가 동일합니다."
+                4 -> "모든 경로가 동일합니다."
+                else -> "비교 결과를 알 수 없습니다."
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 
+/*
             if (matchedData.isEmpty()) {
                 Toast.makeText(context, "해당 경로를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
-            }
+            }*/
 
             val bundle = Bundle().apply {
                 putString("startLocation", startInput.text.toString())
