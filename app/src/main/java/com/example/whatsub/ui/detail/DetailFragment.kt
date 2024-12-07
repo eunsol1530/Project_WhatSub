@@ -71,186 +71,266 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
 
         val totalMinutes = routeData.segments.sumOf { parseTimeToMinutes(it.timeOnLine) }
 
-        container.post {
-            val containerHeight = (container.height * 3 / 4 - 115) // 화면의 75% 높이 사용
-            if (containerHeight > 0) {
-                // 출발 아이콘 추가
-                val startIconView = createTransferIconView()
-                container.addView(startIconView)
+        routeData.segments.forEachIndexed { index, segment ->
+            // 출발역 및 환승 아이콘 추가
+            if (index == 0) {
+                val startContainer = createStationContainer(
+                    iconRes = R.drawable.icon_transfer,
+                    stationName = segment.fromStation.toString(),
+                    toiletCount = segment.toiletCount,
+                    storeCount = segment.storeCount
+                )
+                container.addView(startContainer)
+            }
 
-                routeData.segments.forEachIndexed { index, segment ->
-                    val weight = parseTimeToMinutes(segment.timeOnLine).toFloat() / totalMinutes
+            // 노선 구간 정보 추가
+            val segmentView = createSegmentView(segment, totalMinutes)
+            container.addView(segmentView)
 
-                    // 구간 View 추가
-                    val segmentView = createSegmentView(
-                        segment = segment,
-                        weight = weight,
-                        containerHeight = containerHeight
-                    )
-                    container.addView(segmentView)
+            // 환승 정보 추가
+            if (index < routeData.segments.size - 1) {
+                val transferContainer = createStationContainer(
+                    iconRes = R.drawable.icon_transfer,
+                    stationName = segment.toStation.toString()
+                )
+                container.addView(transferContainer)
+            }
 
-                    // 중간 환승 아이콘 추가 (마지막 구간 제외)
-                    if (index < routeData.segments.size - 1) {
-                        val transferIconView = createTransferIconView()
-                        container.addView(transferIconView)
-                    }
-                }
-
-                // 도착 아이콘 추가
-                val endIconView = createTransferIconView()
-                container.addView(endIconView)
+            // 도착역 정보 추가
+            if (index == routeData.segments.size - 1) {
+                val endContainer = createStationContainer(
+                    iconRes = R.drawable.icon_transfer,
+                    stationName = segment.toStation.toString(),
+                    toiletCount = segment.toiletCount,
+                    storeCount = segment.storeCount
+                )
+                container.addView(endContainer)
             }
         }
 
     }
-        /*
-        // Segments를 화면에 추가
-        container.post {
-            val containerHeight = container.height
-            if (containerHeight > 0) {
-                routeData.segments.forEach { segment ->
-                    val segmentMinutes = parseTimeToMinutes(segment.timeOnLine)
-                    val weight = if (totalMinutes > 0) segmentMinutes.toFloat() / totalMinutes.toFloat() else 0f
 
-                    if (weight > 0) {
-                        val segmentView = createSegmentView(segment, weight, containerHeight, isFirst, isLast)
-                        container.addView(segmentView)
-
-                        Log.d("DetailFragment", "Added Segment: fromStation=${segment.fromStation}, toStation=${segment.toStation}")
-                    } else {
-                        Log.e("DetailFragment", "Weight calculation failed: segmentMinutes=$segmentMinutes, totalMinutes=$totalMinutes")
-                    }
-                }
-            } else {
-                Log.e("DetailFragment", "Container height is zero. Unable to create segment views.")
-            }
-
-            // 최종적으로 자식 뷰 개수 로그 출력
-            Log.d("DetailFragment", "Final Child Count=${container.childCount}")
-        }*/
-
-    private fun parseTimeToMinutes(time: String): Int {
-        val regex = "(\\d+)분\\s*(\\d+)?초?".toRegex()
-        val matchResult = regex.find(time)
-        if (matchResult != null) {
-            val minutes = matchResult.groupValues[1].toIntOrNull() ?: 0
-            val seconds = matchResult.groupValues.getOrNull(2)?.toIntOrNull() ?: 0
-            return minutes + (seconds / 60)
-        }
-        return 0
-    }
-
-    // 노선 라인과 데이터 간 여유 간격 및 아이콘 크기 조정
-    private fun createSegmentView(
-        segment: Transfer,
-        weight: Float,
-        containerHeight: Int
-    ): View {
+    private fun createSegmentView(segment: Transfer, totalMinutes:Int): View {
         val segmentLayout = LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.HORIZONTAL
+            orientation = LinearLayout.HORIZONTAL // 가로 방향으로 설정
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                ((containerHeight * weight)+20).toInt()
+                LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 12, 0, 12) // 위아래 여유 간격
+                setMargins(100, 10, 0, 20)
             }
+            gravity = Gravity.CENTER_VERTICAL // 중앙 정렬
+        }
+// 노선 라인의 높이를 비율에 따라 설정
+        val segmentTime = parseTimeToMinutes(segment.timeOnLine)
+        val lineHeight = if (totalMinutes > 0) {
+            (segmentTime.toFloat() / totalMinutes * 700).toInt() // 비율 기반 높이 계산 (예: 1000dp 기준)
+        } else {
+            100 // 기본값
         }
 
-        val iconAndLineContainer = FrameLayout(requireContext()).apply {
+        // 노선 라인 (세로)
+        val lineView = View(requireContext()).apply {
             layoutParams = LinearLayout.LayoutParams(
-                80, // 고정된 너비
-                LinearLayout.LayoutParams.MATCH_PARENT
+                25, lineHeight // 높이를 동적으로 설정
             ).apply {
-                setMargins(100, 0, 0, 0) // 노선 라인과 데이터 간 간격
+                setMargins(35, 0, 0, 0)
             }
-        }
-
-        // 노선 라인
-        val lineBar = View(requireContext()).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                30, // 라인 두께
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                Gravity.CENTER_VERTICAL // 라인 중앙 정렬
-            )
             setBackgroundColor(getLineColor(segment.lineNumber))
         }
-        iconAndLineContainer.addView(lineBar)
 
-        // 정보 레이아웃 (아이콘과 텍스트 여유 간격)
-        val infoLayout = LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.VERTICAL
+// 노선 정보 텍스트를 포함하는 LinearLayout
+        val textLayout = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL // 세로 방향으로 정렬
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
+                LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(70, 0, 0, 0) // 노선 라인과 데이터 간 간격
+                setMargins(140, 0, 0, 10) // 텍스트를 라인에서 떨어뜨리는 마진
             }
         }
 
-        // 역 정보 텍스트
-        val stationInfo = TextView(requireContext()).apply {
-            text = "${segment.fromStation} ➡ ${segment.toStation} | ${segment.lineNumber}호선 | ${segment.timeOnLine}"
-            textSize = 16f
-        }
-
-        // 화장실, 편의점 아이콘 및 텍스트
-        val facilityInfo = LinearLayout(requireContext()).apply {
+        val textfirstLayout = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
-            addView(ImageView(requireContext()).apply {
-                setImageResource(R.drawable.icon_toilet)
-                layoutParams = LinearLayout.LayoutParams(36, 36) // 아이콘 크기 축소
-            })
-            addView(TextView(requireContext()).apply {
-                text = "${segment.toiletCount}개"
-                textSize = 14f
-                setTextColor(Color.DKGRAY)
-            })
-            addView(ImageView(requireContext()).apply {
-                setImageResource(R.drawable.icon_store)
-                layoutParams = LinearLayout.LayoutParams(36, 36) // 아이콘 크기 축소
-            })
-            addView(TextView(requireContext()).apply {
-                text = "${segment.storeCount}개"
-                textSize = 14f
-                setTextColor(Color.DKGRAY)
-            })
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 0) // 텍스트를 라인에서 떨어뜨리는 마진
+            }
         }
 
-        infoLayout.addView(stationInfo)
-        infoLayout.addView(facilityInfo)
+        // 첫 번째 줄: 노선 정보 (몇 호선, 걸리는 시간)
+        val lineInfo = TextView(requireContext()).apply {
+            text = "${segment.lineNumber}호선"
+            textSize = 16f
+            setTextColor(Color.BLACK)
+            gravity = Gravity.START
+            setTypeface(null, android.graphics.Typeface.BOLD) // **굵은 글꼴**
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, 0) // 텍스트를 라인에서 떨어뜨리는 마진
+            }
+        }
+        textfirstLayout.addView(lineInfo)
 
-        segmentLayout.addView(iconAndLineContainer)
-        segmentLayout.addView(infoLayout)
+        val lineMinute = TextView(requireContext()).apply {
+            text = "${segment.timeOnLine}"
+            textSize = 16f
+            setTextColor(Color.BLACK)
+            gravity = Gravity.START
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(60, 0, 0, 0) // 텍스트를 라인에서 떨어뜨리는 마진
+            }
+        }
+        textfirstLayout.addView(lineMinute)
+
+        // 두 번째 줄: 비용 정보
+        val lineInfoBottom = TextView(requireContext()).apply {
+            text = "${segment.costOnLine}"
+            textSize = 13f
+            setTextColor(Color.GRAY)
+            gravity = Gravity.START
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(30, 10, 0, 0) // 텍스트를 라인에서 떨어뜨리는 마진
+            }
+        }
+
+        // 텍스트 레이아웃에 추가
+        textLayout.addView(textfirstLayout)
+        textLayout.addView(lineInfoBottom)
+
+        // 전체 레이아웃에 추가
+        segmentLayout.addView(lineView)
+        segmentLayout.addView(textLayout)
 
         return segmentLayout
     }
 
-    // 환승 아이콘 중앙 배치
-    private fun createTransferIconView(): View {
-        val iconLayout = LinearLayout(requireContext()).apply {
+    private fun parseTimeToMinutes(time: String): Int {
+        val regex = "(?:(\\d+)시간)?\\s*(?:(\\d+)분)?\\s*(?:(\\d+)초)?".toRegex()
+        val matchResult = regex.find(time)
+        if (matchResult != null) {
+            val hours = matchResult.groupValues[1].toIntOrNull() ?: 0
+            val minutes = matchResult.groupValues[2].toIntOrNull() ?: 0
+            val seconds = matchResult.groupValues[3].toIntOrNull() ?: 0
+            return hours * 60 + minutes + (seconds / 60)
+        }
+        return 0
+    }
+
+
+    private fun createStationContainer(
+        iconRes: Int,
+        stationName: String,
+        toiletCount: Int? = null,
+        storeCount: Int? = null
+    ): View {
+        val container = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                120F
+                LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(63, 0, 0, 0) // 여유 간격 추가
+                setMargins(100, 0, 0, 0)
             }
-            gravity = Gravity.CENTER_VERTICAL // 아이콘이 노선 라인과 수직 정렬되도록 설정
+            gravity = Gravity.CENTER_VERTICAL // 세로 가운데 정렬
         }
 
+        // 아이콘 추가
         val icon = ImageView(requireContext()).apply {
-            setImageResource(R.drawable.icon_transfer)
-            layoutParams = LinearLayout.LayoutParams(
-                100, 100 // 아이콘 크기 설정
-            ).apply {
-                gravity = Gravity.CENTER_VERTICAL // 수직 중앙 정렬
+            setImageResource(iconRes)
+            layoutParams = LinearLayout.LayoutParams(100, 100).apply {
+                setMargins(0,0,70,0)
             }
         }
 
-        iconLayout.addView(icon)
+        // 역 이름 추가
+        val stationNameText = TextView(requireContext()).apply {
+            text = stationName
+            textSize = 20f
+            setTextColor(Color.BLACK)
+            setTypeface(null, android.graphics.Typeface.BOLD) // **굵은 글꼴**
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(22, 0, 40, 0) // **텍스트를 라인에서 떨어뜨리는 마진**
+            }
+        }
 
-        return iconLayout
+        // 화장실/편의점 정보 레이아웃
+        val facilityInfoLayout = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(20, 5, 0, 5) // 텍스트와의 간격 조정
+            }
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        // 화장실 아이콘과 텍스트
+        toiletCount?.let {
+            val toiletIcon = ImageView(requireContext()).apply {
+                setImageResource(R.drawable.icon_toilet) // 화장실 아이콘 적용
+                layoutParams = LinearLayout.LayoutParams(60, 60).apply {
+                    setMargins(0, 0, 10, 0)
+                }
+            }
+
+            val toiletText = TextView(requireContext()).apply {
+                text = "$it"
+                textSize = 16f
+                setTextColor(Color.GRAY)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+
+            facilityInfoLayout.addView(toiletIcon)
+            facilityInfoLayout.addView(toiletText)
+        }
+
+        // 편의점 아이콘과 텍스트
+        storeCount?.let {
+            val storeIcon = ImageView(requireContext()).apply {
+                setImageResource(R.drawable.icon_store) // 편의점 아이콘 적용
+                layoutParams = LinearLayout.LayoutParams(60, 60).apply {
+                    setMargins(20, 0, 10, 0) // 간격 조정
+                }
+            }
+
+            val storeText = TextView(requireContext()).apply {
+                text = "$it"
+                textSize = 16f
+                setTextColor(Color.GRAY)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+
+            facilityInfoLayout.addView(storeIcon)
+            facilityInfoLayout.addView(storeText)
+        }
+
+        // 컨테이너에 요소 추가
+        container.addView(icon)
+        container.addView(stationNameText)
+        container.addView(facilityInfoLayout)
+        return container
+    }
     }
 
     private fun getLineColor(lineNumber: Int): Int {
@@ -267,4 +347,3 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
             else -> Color.GRAY
         }
     }
-}
