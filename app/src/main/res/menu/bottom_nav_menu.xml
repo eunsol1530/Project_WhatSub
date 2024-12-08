@@ -12,6 +12,11 @@
         android:title="@string/title_favorites" />
 
     <item
+        android:id="@+id/navigation_game"
+        android:icon="@drawable/icon_game"
+        android:title="@string/title_game" />
+
+    <item
         android:id="@+id/navigation_news"
         android:icon="@drawable/icon_news"
         android:title="@string/title_news" />

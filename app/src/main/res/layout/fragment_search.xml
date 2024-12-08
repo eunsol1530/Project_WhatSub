@@ -4,18 +4,115 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:context=".ui.home.HomeFragment">
 
-    <TextView
-        android:id="@+id/text_search"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Search Fragment"
-        android:textSize="18sp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/search_path"
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_gravity="center"/>
+        app:layout_constraintStart_toStartOf="parent">
 
+        <EditText
+            android:id="@+id/start_location"
+            android:layout_width="140dp"
+            android:layout_height="50dp"
+            android:background="@drawable/img_home_search_back"
+            android:text="출발지"
+            android:inputType="text"
+            android:gravity="center"
+            android:layout_marginTop="45dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginStart="30dp"/>
+
+        <ImageButton
+            android:id="@+id/btn_exchange"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/icon_search_exchange"
+            android:scaleType="fitCenter"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/exchange_button"
+            app:layout_constraintStart_toEndOf="@id/start_location"
+            app:layout_constraintEnd_toStartOf="@id/destination_location"
+            app:layout_constraintTop_toTopOf="@id/start_location"
+            app:layout_constraintBottom_toBottomOf="@id/destination_location" />
+
+        <EditText
+            android:id="@+id/destination_location"
+            android:layout_width="140dp"
+            android:layout_height="50dp"
+            android:background="@drawable/img_home_search_back"
+            android:text="도착지"
+            android:inputType="text"
+            android:gravity="center"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginEnd="30dp"
+            android:layout_marginTop="45dp"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageButton
+            android:id="@+id/research_btn"
+            android:layout_width="220dp"
+            android:layout_height="50dp"
+            android:importantForAccessibility="no"
+            android:scaleType="centerInside"
+            android:src="@drawable/img_research_btn"
+            android:background="@color/white"
+            android:layout_marginTop="10dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btn_exchange"
+            app:layout_constraintBottom_toBottomOf="@id/search_path"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/search_path"
+            android:layout_marginTop="0dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/path_item1"
+                android:layout_width="match_parent"
+                android:layout_height="128dp"
+                android:padding="8dp"
+                android:background="@color/white"
+                android:text="최소 시간"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/path_item2"
+                android:layout_width="match_parent"
+                android:layout_height="128dp"
+                android:padding="8dp"
+                android:background="@color/white"
+                android:text="최소 비용"
+                android:textSize="16sp" />
+
+
+            <TextView
+                android:id="@+id/path_item3"
+                android:layout_width="match_parent"
+                android:layout_height="128dp"
+                android:padding="8dp"
+                android:background="@color/white"
+                android:text="최소 환승"
+                android:textSize="16sp" />
+
+
+            <TextView
+                android:id="@+id/path_item4"
+                android:layout_width="match_parent"
+                android:layout_height="128dp"
+                android:padding="8dp"
+                android:background="@color/white"
+                android:text=""
+                android:textSize="16sp" />
+        </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
