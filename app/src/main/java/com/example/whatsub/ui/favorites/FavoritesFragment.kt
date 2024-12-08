@@ -49,13 +49,14 @@ class FavoritesFragment : Fragment() {
         favoritesList.clear()
         favoritesList.addAll(loadFavorites())
 
-        favoritesViewModel = ViewModelProvider(requireActivity())[FavoritesViewModel::class.java]
+        val factory = FavoritesViewModelFactory(requireContext())
+        favoritesViewModel = ViewModelProvider(this, factory)[FavoritesViewModel::class.java]
 
-
+        // SharedPreferences에서 즐겨찾기 데이터 로드
         val routeContainer: LinearLayout = binding.root.findViewById(R.id.routeContainer)
+        val favoritesList = favoritesViewModel.favorites.value ?: mutableListOf()
 
-        val routeViewMap = mutableMapOf<TransferPath, View>() // Path와 View 매핑
-
+        val routeViewMap = mutableMapOf<TransferPath, View>()
 
         favoritesList.forEach { path ->
             val routeView = RouteViewUtils.createRouteView(
@@ -64,12 +65,8 @@ class FavoritesFragment : Fragment() {
                 "즐겨찾기 경로"
             ) { transferPath, isFavorite ->
                 if (!isFavorite) {
-                    removeFromFavorites(transferPath)
-                    favoritesList.remove(transferPath)
-
-                    // routeViewMap에서 해당 View를 찾아 제거
-                    val viewToRemove = routeViewMap[transferPath]
-                    if (viewToRemove != null) {
+                    favoritesViewModel.removeFavorite(transferPath)
+                    routeViewMap[transferPath]?.let { viewToRemove ->
                         routeContainer.removeView(viewToRemove)
                         routeViewMap.remove(transferPath)
                     }
@@ -79,7 +76,6 @@ class FavoritesFragment : Fragment() {
                     }
                 }
             }
-            // View와 Path를 매핑
             routeViewMap[path] = routeView
             routeContainer.addView(routeView)
         }
@@ -107,23 +103,30 @@ class FavoritesFragment : Fragment() {
         }*/
     }
 
-    // SharedPreferences에서 즐겨찾기 데이터를 로드하는 함수
-    private fun loadFavorites(): List<TransferPath> {
-        val sharedPref = requireContext().getSharedPreferences("favorites", android.content.Context.MODE_PRIVATE)
-        val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: return emptyList()
-
-        // JSON 문자열을 TransferPath 객체로 변환
-        return favorites.map { Gson().fromJson(it, TransferPath::class.java) }
-    }
-
-    // SharedPreferences에서 즐겨찾기 데이터를 삭제하는 함수
-    private fun removeFromFavorites(transferPath: TransferPath) {
-        val sharedPref = requireContext().getSharedPreferences("favorites", android.content.Context.MODE_PRIVATE)
+    private fun saveToFavorites(transferPath: TransferPath) {
+        val sharedPref = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
         val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: mutableSetOf()
 
-        val jsonToRemove = Gson().toJson(transferPath)
-        favorites.remove(jsonToRemove)
-        sharedPref.edit().putStringSet("routes", favorites).apply()
+        val routeJson = Gson().toJson(transferPath) // 데이터를 JSON으로 변환
+        favorites.add(routeJson) // 즐겨찾기에 추가
+        sharedPref.edit().putStringSet("routes", favorites).apply() // SharedPreferences에 저장
+    }
+
+    private fun removeFromFavorites(transferPath: TransferPath) {
+        val sharedPref = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
+        val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: mutableSetOf()
+
+        val routeJson = Gson().toJson(transferPath) // 데이터를 JSON으로 변환
+        favorites.remove(routeJson) // 즐겨찾기에서 제거
+        sharedPref.edit().putStringSet("routes", favorites).apply() // SharedPreferences에 저장
+    }
+
+    private fun loadFavorites(): MutableList<TransferPath> {
+        val sharedPref = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
+        val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: mutableSetOf()
+
+        // JSON 문자열을 TransferPath 객체로 변환
+        return favorites.map { Gson().fromJson(it, TransferPath::class.java) }.toMutableList()
     }
 
 

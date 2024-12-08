@@ -28,6 +28,7 @@ import com.example.whatsub.data.api.model.PathData
 import com.example.whatsub.data.api.model.ShortestPath
 import com.example.whatsub.data.api.model.Transfer
 import com.example.whatsub.ui.favorites.FavoritesViewModel
+import com.example.whatsub.ui.favorites.FavoritesViewModelFactory
 import com.example.whatsub.ui.home.HomeViewModel
 import com.google.gson.Gson
 import java.io.IOException
@@ -642,7 +643,8 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         // ViewModel 초기화
         homeViewModel = ViewModelProvider(requireActivity())[HomeViewModel::class.java]
         // FavoritesViewModel 초기화
-        favoritesViewModel = ViewModelProvider(requireActivity())[FavoritesViewModel::class.java]
+        val factory = FavoritesViewModelFactory(requireContext())
+        favoritesViewModel = ViewModelProvider(this, factory)[FavoritesViewModel::class.java]
 
         // ViewModel 데이터 관찰
         homeViewModel.pathData.observe(viewLifecycleOwner) { pathData ->
