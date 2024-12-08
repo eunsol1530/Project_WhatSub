@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
 import android.view.View
-import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -13,8 +12,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.example.whatsub.R
-import com.example.whatsub.model.Transfer
-import com.example.whatsub.model.TransferPath
+import com.example.whatsub.data.api.model.Transfer
+import com.example.whatsub.data.api.model.TransferPath
 
 class DetailFragment : Fragment(R.layout.fragment_detail) {
 
@@ -126,7 +125,7 @@ class DetailFragment : Fragment(R.layout.fragment_detail) {
 // 노선 라인의 높이를 비율에 따라 설정
         val segmentTime = parseTimeToMinutes(segment.timeOnLine)
         val lineHeight = if (totalMinutes > 0) {
-            (segmentTime.toFloat() / totalMinutes * 600).toInt() // 비율 기반 높이 계산 (예: 1000dp 기준)
+            (segmentTime.toFloat() / totalMinutes * 700).toInt() // 비율 기반 높이 계산 (예: 1000dp 기준)
         } else {
             100 // 기본값
         }

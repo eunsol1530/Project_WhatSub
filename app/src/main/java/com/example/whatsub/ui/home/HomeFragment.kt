@@ -6,18 +6,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.commit
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.example.whatsub.R
 import com.example.whatsub.databinding.FragmentHomeBinding
-import com.example.whatsub.model.PathData
-import com.example.whatsub.ui.search.SearchFragment
+import com.example.whatsub.data.api.model.PathData
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import java.io.IOException
 
 class HomeFragment : Fragment() {
@@ -103,18 +99,6 @@ class HomeFragment : Fragment() {
                 Toast.makeText(context, "데이터를 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
-            val comparisonResult = pathData.comparisonResult
-            val message = when (comparisonResult) {
-                0 -> "겹치는 경로 없음"
-                1 -> "시간과 비용 경로가 동일합니다."
-                2 -> "비용과 환승 경로가 동일합니다."
-                3 -> "환승과 시간 경로가 동일합니다."
-                4 -> "모든 경로가 동일합니다."
-                else -> "비교 결과를 알 수 없습니다."
-            }
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-
 /*
             if (matchedData.isEmpty()) {
                 Toast.makeText(context, "해당 경로를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()

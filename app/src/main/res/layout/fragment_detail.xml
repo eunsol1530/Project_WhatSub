@@ -135,6 +135,12 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
+    <ScrollView
+        android:id="@+id/detail"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true" >
+
     <LinearLayout
         android:id="@+id/routeDetailContainer"
         android:layout_width="match_parent"
@@ -143,5 +149,6 @@
         android:orientation="vertical"
         android:padding="16dp" />
 
+    </ScrollView>
 
 </LinearLayout>

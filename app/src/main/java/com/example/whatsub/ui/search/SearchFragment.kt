@@ -3,10 +3,11 @@ package com.example.whatsub.ui.search
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.Color
-import android.graphics.Rect
 import android.graphics.Typeface
 import android.os.Bundle
-import android.os.TestLooperManager
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.style.StyleSpan
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -14,21 +15,18 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.PopupMenu
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.whatsub.R
-import com.example.whatsub.model.CheapestPath
-import com.example.whatsub.model.TransferPath
-import com.example.whatsub.model.PathData
-import com.example.whatsub.model.ShortestPath
-import com.example.whatsub.model.Transfer
+import com.example.whatsub.data.api.model.CheapestPath
+import com.example.whatsub.data.api.model.TransferPath
+import com.example.whatsub.data.api.model.PathData
+import com.example.whatsub.data.api.model.ShortestPath
+import com.example.whatsub.data.api.model.Transfer
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import java.io.IOException
 
 class SearchFragment : Fragment (R.layout.fragment_search) {
@@ -42,7 +40,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             gson.fromJson(jsonString, PathData::class.java)
         } catch (e: IOException) {
             e.printStackTrace()
-            PathData(null, null, null, 0) // 기본값으로 반환
+            PathData(null, null, null, emptyList()) // 기본값으로 반환
         }
     }
 
@@ -102,8 +100,10 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
         // 라벨 (최소 시간/최소 비용/최소 환승)
         val labelTextView = TextView(requireContext()).apply {
-            text = label
-            textSize = 12f
+            //text = label
+            id = R.id.route_label // ID 설정
+            text = createStyledLabel(label) // 수정된 함수로 스타일 적용
+            textSize = 13f
             setTextColor(Color.DKGRAY)
             setTypeface(null, Typeface.BOLD)
             layoutParams = LinearLayout.LayoutParams(
@@ -461,45 +461,108 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         )
     }
 
+    private fun createStyledLabel(label: String): SpannableString {
+        val spannable = SpannableString(label)
+        val ampersandIndex = label.indexOf('&')
+
+        if (ampersandIndex != -1) {
+            // "최소 시간 & 최소 환승"에서 & 이후를 굵게 설정
+            spannable.setSpan(
+                StyleSpan(Typeface.BOLD),
+                ampersandIndex, label.length,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+        return spannable
+    }
 
     private fun displayRoutes(pathData: PathData, routeContainer: LinearLayout) {
         routeContainer.removeAllViews() // 기존 View 초기화
 
-        // 비교 결과를 기반으로 겹치는 경로 판별
-        val comparisonResult = pathData.comparisonResult
+        val comparisonResults = pathData.comparisonResults ?: return
+        val renderedPaths = mutableMapOf<String, View>() // 고유 키와 View 저장
+        val labelsMap = mutableMapOf<String, String>() // 고유 키와 라벨 매핑
 
-        var shortestPathLabel = "최소 시간"
-        var cheapestPathLabel = "최소 비용"
-        var leastTransfersLabel = "최소 환승"
+        fun renderPath(path: TransferPath, label: String, updateLabelOnly: Boolean = false) {
+            val uniqueKey = "${path.totalTime}-${path.totalCost}-${path.segments.joinToString { "${it.fromStation}-${it.toStation}-${it.lineNumber}" }}"
 
-        // 겹치는 경로에 따라 라벨 업데이트
-        when (comparisonResult) {
-            1 -> shortestPathLabel += " & 최소비용" // 최소 시간과 최소 비용이 겹침
-            2 -> cheapestPathLabel += " & 최소환승" // 최소 비용과 최소 환승이 겹침
-            3 -> shortestPathLabel += " & 최소환승" // 최소 시간과 최소 환승이 겹침
-            4 -> shortestPathLabel += " & 최소비용 & 최소환승" // 모두 겹침
+            if (renderedPaths.containsKey(uniqueKey)) {
+                Log.d("FilterDebug", "Path already exists: $uniqueKey. Updating label.")
+
+                val existingLabel = labelsMap[uniqueKey] ?: label
+                val newLabelPart = label.split("&").last().trim()
+
+                // **중복된 라벨 방지 로직**
+                if (existingLabel.contains(newLabelPart)) {
+                    Log.d("LabelDebug", "Skipping duplicate label update: $newLabelPart")
+                    return
+                }
+
+                val updatedLabel = "$existingLabel & $newLabelPart"
+                labelsMap[uniqueKey] = updatedLabel
+
+                // 기존 뷰의 라벨 업데이트
+                val existingView = renderedPaths[uniqueKey] ?: return
+                val labelTextView = existingView.findViewById<TextView>(R.id.route_label)
+                labelTextView?.text = updatedLabel
+                Log.d("RenderDebug", "Updated label: $updatedLabel for path: $uniqueKey")
+
+                return
+            }
+
+            if (!updateLabelOnly) {
+                // 새로운 경로 추가
+                val routeView = createRouteView(path, label).apply {
+                    tag = uniqueKey
+                }
+                routeContainer.addView(routeView)
+                renderedPaths[uniqueKey] = routeView
+                labelsMap[uniqueKey] = label
+                Log.d("RenderDebug", "Rendered path with label: $label for key: $uniqueKey")
+            }
         }
 
         // 최소 시간 경로 추가
         pathData.shortestPath?.paths?.forEachIndexed { index, path ->
-            if (comparisonResult == 3 || comparisonResult == 4) return@forEachIndexed // 겹치는 경우 제외
-            val routeView = createRouteView(path, shortestPathLabel)
-            routeContainer.addView(routeView)
+            val result = comparisonResults.getOrNull(index) ?: 0
+            val label = when (result) {
+                3 -> "최소 시간 & 최소 환승"
+                4 -> "최소 시간 & 최소 비용 & 최소 환승"
+                1 -> "최소 시간 & 최소 비용"
+                else -> "최소 시간"
+            }
+            renderPath(path, label)
         }
 
         // 최소 비용 경로 추가
         pathData.cheapestPath?.paths?.forEachIndexed { index, path ->
-            if (comparisonResult == 1 || comparisonResult == 4) return@forEachIndexed // 겹치는 경우 제외
-            val routeView = createRouteView(path, cheapestPathLabel)
-            routeContainer.addView(routeView)
+            val result = comparisonResults.getOrNull(index) ?: 0
+            val label = when (result) {
+                2 -> "최소 비용 & 최소 환승"
+                4 -> "최소 시간 & 최소 비용 & 최소 환승"
+                else -> "최소 비용"
+            }
+
+            // 중복 여부 확인 및 라벨 업데이트
+            if (result in listOf(2, 4)) {
+                renderPath(path, label, updateLabelOnly = true)
+            } else {
+                renderPath(path, label)
+            }
         }
 
         // 최소 환승 경로 추가
         pathData.leastTransfersPath?.paths?.forEachIndexed { index, path ->
-            if (comparisonResult == 2 || comparisonResult == 3 || comparisonResult == 4) return@forEachIndexed // 겹치는 경우 제외
-            val routeView = createRouteView(path, leastTransfersLabel)
-            routeContainer.addView(routeView)
+            val result = comparisonResults.getOrNull(index) ?: 0
+            if (result in listOf(2, 3, 4)) {
+                Log.d("RenderDebug", "Skipping least transfer path as it's already included.")
+                renderPath(path, "최소 환승", updateLabelOnly = true)
+            } else {
+                renderPath(path, "최소 환승")
+            }
         }
+
+        Log.d("FinalRenderedPaths", "Rendered Paths: ${renderedPaths.keys}")
     }
 
 
@@ -546,7 +609,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
         // displayRoutes 호출
         displayRoutes(pathData, routeContainer)
-
+/*
         // 경로 데이터를 동적으로 추가
         fun displayRoutes(pathData: PathData) {
             routeContainer.removeAllViews() // 기존 View 초기화
@@ -573,7 +636,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
         // 초기 데이터 표시
         displayRoutes(pathData)
-
+*/
         // 초기 데이터 표시
         val researchBtn: ImageButton = view.findViewById(R.id.research_btn)
         val exchangeButton: ImageButton = view.findViewById(R.id.btn_exchange)

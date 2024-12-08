@@ -1,37 +1,28 @@
 {
   "shortestPath": {
-    "startStation": 111,
-    "endStation": 409,
-    "totalTransfers": 2,
+    "startStation": 121,
+    "endStation": 503,
+    "totalTransfers": 1,
     "paths": [
       {
-        "totalTime": "55분 0초",
-        "totalCost": "4,190원",
+        "totalTime": "22분 30초",
+        "totalCost": "1,260원",
         "segments": [
           {
-            "fromStation": 111,
-            "toStation": 112,
-            "lineNumber": 1,
-            "timeOnLine": "16분 40초",
-            "costOnLine": "890원",
+            "fromStation": 121,
+            "toStation": 601,
+            "lineNumber": 6,
+            "timeOnLine": "14분 10초",
+            "costOnLine": "610원",
             "toiletCount": 1,
             "storeCount": 1
           },
           {
-            "fromStation": 112,
-            "toStation": 406,
-            "lineNumber": 9,
-            "timeOnLine": "15분 0초",
-            "costOnLine": "1,350원",
-            "toiletCount": 3,
-            "storeCount": 2
-          },
-          {
-            "fromStation": 406,
-            "toStation": 409,
-            "lineNumber": 4,
-            "timeOnLine": "23분 20초",
-            "costOnLine": "1,950원",
+            "fromStation": 601,
+            "toStation": 503,
+            "lineNumber": 7,
+            "timeOnLine": "8분 20초",
+            "costOnLine": "650원",
             "toiletCount": 3,
             "storeCount": 2
           }
@@ -40,90 +31,90 @@
     ]
   },
   "cheapestPath": {
-    "startStation": 111,
-    "endStation": 409,
+    "startStation": 121,
+    "endStation": 503,
+    "totalTransfers": 1,
     "paths": [
       {
-        "totalTime": "1시간 38분 20초",
-        "totalCost": "3,930원",
-        "totalTransfers": 1,
+        "totalTime": "22분 30초",
+        "totalCost": "1,260원",
         "segments": [
           {
-            "fromStation": 111,
-            "toStation": 113,
-            "lineNumber": 1,
-            "costOnLine": "1,690원",
-            "timeOnLine": "50분 0초",
+            "fromStation": 121,
+            "toStation": 601,
+            "lineNumber": 6,
+            "timeOnLine": "14분 10초",
+            "costOnLine": "610원",
             "toiletCount": 1,
             "storeCount": 1
           },
           {
-            "fromStation": 113,
-            "toStation": 409,
-            "lineNumber": 8,
-            "costOnLine": "2,240원",
-            "timeOnLine": "48분 20초",
-            "toiletCount": 2,
-            "storeCount": 1
+            "fromStation": 601,
+            "toStation": 503,
+            "lineNumber": 7,
+            "timeOnLine": "8분 20초",
+            "costOnLine": "650원",
+            "toiletCount": 3,
+            "storeCount": 2
           }
         ]
       }
     ]
   },
   "leastTransfersPath": {
-    "startStation": 111,
-    "endStation": 409,
+    "startStation": 121,
+    "endStation": 503,
     "totalTransfers": 1,
     "paths": [
       {
-        "totalTime": "1시간 15분 0초",
-        "totalCost": "4,010원",
+        "totalTime": "22분 30초",
+        "totalCost": "1,260원",
         "segments": [
           {
-            "fromStation": 111,
-            "toStation": 115,
-            "lineNumber": 1,
-            "timeOnLine": "1시간 2분 0초",
-            "costOnLine": "2,930원",
+            "fromStation": 121,
+            "toStation": 601,
+            "lineNumber": 6,
+            "timeOnLine": "14분 10초",
+            "costOnLine": "610원",
             "toiletCount": 1,
             "storeCount": 1
           },
           {
-            "fromStation": 115,
-            "toStation": 409,
-            "lineNumber": 4,
-            "timeOnLine": "13분 0초",
-            "costOnLine": "1,080원",
+            "fromStation": 601,
+            "toStation": 503,
+            "lineNumber": 7,
+            "timeOnLine": "8분 20초",
+            "costOnLine": "650원",
             "toiletCount": 3,
             "storeCount": 2
           }
         ]
       },
       {
-        "totalTime": "1시간 38분 20초",
-        "totalCost": "3,930원",
+        "totalTime": "23분 50초",
+        "totalCost": "1,280원",
         "segments": [
           {
-            "fromStation": 111,
-            "toStation": 113,
+            "fromStation": 121,
+            "toStation": 122,
             "lineNumber": 1,
-            "timeOnLine": "50분 0초",
-            "costOnLine": "1,690원",
+            "timeOnLine": "15분 0초",
+            "costOnLine": "650원",
             "toiletCount": 1,
             "storeCount": 1
           },
           {
-            "fromStation": 113,
-            "toStation": 409,
-            "lineNumber": 8,
-            "timeOnLine": "48분 20초",
-            "costOnLine": "2,240원",
-            "toiletCount": 2,
-            "storeCount": 1
+            "fromStation": 122,
+            "toStation": 503,
+            "lineNumber": 5,
+            "timeOnLine": "8분 50초",
+            "costOnLine": "630원",
+            "toiletCount": 3,
+            "storeCount": 2
           }
         ]
       }
     ]
   },
-  "comparisonResult": 0
+  "comparisonResults": [4, 1]
 }
