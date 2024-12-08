@@ -632,7 +632,6 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         displayRoutes(pathData, routeContainer)
     }
 
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -655,14 +654,15 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             }
         }
 
+        // arguments로 전달받은 데이터 가져오기
+        val startLocation = arguments?.getString("startLocation") ?: "출발지가 없습니다"
+        val destinationLocation = arguments?.getString("destinationLocation") ?: "도착지가 없습니다"
+
+
         // UI 요소 초기화 및 데이터 처리
         val startInput: EditText = view.findViewById(R.id.start_location)
         val destinationInput: EditText = view.findViewById(R.id.destination_location)
         val routeContainer: LinearLayout = view.findViewById(R.id.routeContainer)
-
-        // arguments로 전달받은 데이터 가져오기
-        val startLocation = arguments?.getString("startLocation") ?: "출발지가 없습니다"
-        val destinationLocation = arguments?.getString("destinationLocation") ?: "도착지가 없습니다"
 
 
         Log.d("SearchFragment", "Received startLocation: $startLocation")
@@ -671,7 +671,9 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
         if (startLocation.isEmpty() || destinationLocation.isEmpty()) {
             Toast.makeText(context, "잘못된 데이터입니다. 홈 화면으로 돌아갑니다.", Toast.LENGTH_SHORT).show()
-            findNavController().popBackStack() // 이전 화면으로 이동
+            startInput.setText("") // 초기화
+            destinationInput.setText("") // 초기화
+            findNavController().popBackStack() // 이전 화면으로 돌아감
             return
         }
 
@@ -697,6 +699,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             findNavController().popBackStack()
             return
         }
+
 
         // displayRoutes 호출
         displayRoutes(pathData, routeContainer)
@@ -746,6 +749,9 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
         // 재탐색 버튼 클릭 이벤트
         researchBtn.setOnClickListener {
+           // val homeViewModel = ViewModelProvider(requireActivity()).get(HomeViewModel::class.java)
+            //homeViewModel.resetPathData() // 데이터 초기화
+
             val newStart = startInput.text.toString().trim()
             val newDestination = destinationInput.text.toString().trim()
 
@@ -762,6 +768,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             Log.d("SearchFragment", "재검색 시작 - 출발지: $newStart, 도착지: $newDestination")
 
             // ViewModel을 통해 서버에 경로 요청
+            homeViewModel.resetPathData()
             homeViewModel.fetchShortestPath(newStart, newDestination)
 
             /*// LiveData를 관찰하여 결과 업데이트
@@ -771,11 +778,25 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 Toast.makeText(requireContext(), "새로운 경로를 탐색했습니다.", Toast.LENGTH_SHORT).show()
             }*/
 
+            homeViewModel.pathData.observe(viewLifecycleOwner) { updatedPathData ->
+                if (updatedPathData?.shortestPath == null && updatedPathData?.cheapestPath == null) {
+                    //Toast.makeText(requireContext(), "경로 데이터를 불러올 수 없습니다.", Toast.LENGTH_SHORT).show()
+                    Log.d("SearchFragment", "(updatedPathData?.shortestPath == null && updatedPathData?.cheapestPath == null")
+                    return@observe
+                }
+                Log.d("SearchFragment", "재검색 완료: $updatedPathData")
+
+                // 기존 데이터 제거 후 새로운 데이터 추가
+                routeContainer.removeAllViews()
+                displayRoutes(updatedPathData, routeContainer)
+            }
+
             // LiveData를 관찰하여 에러 메시지 처리
             homeViewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
-                Toast.makeText(requireContext(), "에러 발생: $errorMessage", Toast.LENGTH_SHORT).show()
+                //Toast.makeText(requireContext(), "에러 발생: $errorMessage", Toast.LENGTH_SHORT).show()
                 Log.e("SearchFragment", "Error: $errorMessage")
             }
+
         }
 
 
@@ -807,5 +828,10 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
                     Toast.makeText(requireContext(), "새로운 경로를 탐색했습니다.", Toast.LENGTH_SHORT).show()
                 }*/
+    }
+    override fun onDestroyView() {
+        super.onDestroyView()
+        val homeViewModel = ViewModelProvider(requireActivity()).get(HomeViewModel::class.java)
+        homeViewModel.resetPathData()
     }
 }

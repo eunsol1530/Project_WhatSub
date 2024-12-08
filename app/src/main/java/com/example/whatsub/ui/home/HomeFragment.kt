@@ -11,6 +11,9 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.example.whatsub.R
@@ -41,15 +44,23 @@ class HomeFragment : Fragment() {
         return binding.root
     }
 
+    /*override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }*/
     override fun onDestroyView() {
         super.onDestroyView()
+        homeViewModel.resetPathData() // ViewModel 데이터 초기화
         _binding = null
     }
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-/*
+
+        homeViewModel = ViewModelProvider(this).get(HomeViewModel::class.java)
+
+        /*
         // JSON 데이터 로드 함수 추가
         fun loadPathDataFromJson(): PathData? {
             return try {
@@ -85,6 +96,7 @@ class HomeFragment : Fragment() {
 
         // 검색 버튼 클릭 이벤트
         binding.btnSearch.setOnClickListener {
+
             val startStation = startInput.text.toString().trim()
             val endStation = destinationInput.text.toString().trim()
 
@@ -103,9 +115,13 @@ class HomeFragment : Fragment() {
             //putString("destinationLocation", destinationInput.text.toString())
             //}
 
+            // 새로운 검색 시작 시
+            homeViewModel.resetPathData() // LiveData 초기화
+
 
             // ViewModel을 통해 데이터 요청
             homeViewModel.fetchShortestPath(startStation, endStation)
+
 
             /* val bundle = Bundle().apply {
                 putString("startLocation", startStation)
@@ -119,22 +135,75 @@ class HomeFragment : Fragment() {
 
             // LiveData 관찰
             homeViewModel.pathData.observe(viewLifecycleOwner) { pathData ->
-                // API로부터 데이터를 성공적으로 받았을 때 처리
-                val bundle = Bundle().apply {
-                    putString("startLocation", startStation)
-                    putString("destinationLocation", endStation)
-                    putSerializable("pathData", pathData)
+                if (pathData?.shortestPath == null && pathData?.cheapestPath == null) {
+                    Toast.makeText(
+                        requireContext(),
+                        "경로 데이터를 불러올 수 없습니다. 다시 시도해주세요.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    // 입력된 값을 초기화
+                    startInput.setText("")
+                    destinationInput.setText("")
+                    return@observe
+
+                } else {
+                    // 중복 Navigation 방지
+                    if (findNavController().currentDestination?.id != R.id.navigation_home) {
+                        return@observe
+                    }
+                    val bundle = Bundle().apply {
+                        putString("startLocation", startStation)
+                        putString("destinationLocation", endStation)
+                        putSerializable("pathData", pathData)
+                    }
+                    findNavController().navigate(R.id.action_homeFragment_to_searchFragment, bundle)
                 }
-                findNavController().navigate(R.id.action_homeFragment_to_searchFragment, bundle)
-            }
+                }
+
+
+
         }
 
         homeViewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
-            // 에러 메시지 처리
-            Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show()
+            if (!errorMessage.isNullOrBlank()) {
+                Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show()
+                Log.d("HomeFragment", "maybe null error")
+                return@observe
+            }
         }
 
     }
+}
+
+
+/*
+
+            // `observe`를 명시적으로 호출
+            homeViewModel.pathData.observeOnce(viewLifecycleOwner) { pathData ->
+                if (pathData != null) {
+                    val bundle = Bundle().apply {
+                        putString("startLocation", startStation)
+                        putString("destinationLocation", endStation)
+                        putSerializable("pathData", pathData)
+                    }
+                    findNavController().navigate(R.id.action_homeFragment_to_searchFragment, bundle)
+                } else {
+                    Toast.makeText(requireContext(), "경로를 불러올 수 없습니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            fun <T> LiveData<T>.observeOnce(owner: LifecycleOwner, observer: Observer<T>) {
+                observe(owner, object : Observer<T> {
+                    override fun onChanged(t: T?) {
+                        observer.onChanged(t)
+                        removeObserver(this)
+                    }
+                })
+            }
+
+
+        }
 /*
         // 출발지와 도착지 EditText
         val startInput: EditText = view.findViewById(R.id.start_input)
@@ -217,4 +286,3 @@ class HomeFragment : Fragment() {
 
             findNavController().navigate(R.id.action_homeFragment_to_searchFragment, bundle)
             */*/
-        }
