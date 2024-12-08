@@ -1,0 +1,14 @@
+[
+  {
+    "routeName": "Line 1",
+    "startStation": "102",
+    "endStation": "201",
+    "details": "Some details about the route"
+  },
+  {
+    "routeName": "Line 2",
+    "startStation": "305",
+    "endStation": "666",
+    "details": "Some details about another route"
+  }
+]
