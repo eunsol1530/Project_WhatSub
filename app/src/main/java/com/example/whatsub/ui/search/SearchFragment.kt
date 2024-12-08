@@ -100,8 +100,8 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
         // 라벨 (최소 시간/최소 비용/최소 환승)
         val labelTextView = TextView(requireContext()).apply {
-            //text = label
             id = R.id.route_label // ID 설정
+            //text = label
             text = createStyledLabel(label) // 수정된 함수로 스타일 적용
             textSize = 13f
             setTextColor(Color.DKGRAY)
@@ -389,8 +389,11 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         // 클릭 리스너 추가
         routeView.setOnClickListener {
             Log.d("RouteViewClick", "RouteView clicked with data: $path")
+            // 업데이트된 라벨 가져오기
+            val updatedLabel = labelTextView.text.toString()
+
             val bundle = Bundle().apply {
-                putString("routeType", label) // 라벨 정보 전달
+                putString("routeType", updatedLabel) // 라벨 정보 전달
                 putSerializable("routeData", path) // TransferPath 전달
             }
             Log.d("NavigationDebug", "routeType: $label, routeData: $path")
@@ -483,7 +486,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         val renderedPaths = mutableMapOf<String, View>() // 고유 키와 View 저장
         val labelsMap = mutableMapOf<String, String>() // 고유 키와 라벨 매핑
 
-        fun renderPath(path: TransferPath, label: String, updateLabelOnly: Boolean = false) {
+        fun renderPath(path: TransferPath, label: String, result: Int) {
             val uniqueKey = "${path.totalTime}-${path.totalCost}-${path.segments.joinToString { "${it.fromStation}-${it.toStation}-${it.lineNumber}" }}"
 
             if (renderedPaths.containsKey(uniqueKey)) {
@@ -496,8 +499,14 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 if (existingLabel.contains(newLabelPart)) {
                     Log.d("LabelDebug", "Skipping duplicate label update: $newLabelPart")
                     return
-                }
+                }/*
+                // 중복된 라벨 방지 로직
+                if (existingLabel.contains(newLabelPart) && result !in listOf(2, 3, 4)) {
+                    Log.d("LabelDebug", "Skipping duplicate label update: $newLabelPart")
+                    return
+                }*/
 
+                // 새로운 라벨 붙이기
                 val updatedLabel = "$existingLabel & $newLabelPart"
                 labelsMap[uniqueKey] = updatedLabel
 
@@ -510,16 +519,18 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 return
             }
 
-            if (!updateLabelOnly) {
-                // 새로운 경로 추가
-                val routeView = createRouteView(path, label).apply {
-                    tag = uniqueKey
-                }
-                routeContainer.addView(routeView)
-                renderedPaths[uniqueKey] = routeView
-                labelsMap[uniqueKey] = label
-                Log.d("RenderDebug", "Rendered path with label: $label for key: $uniqueKey")
+            // 새로운 경로 추가
+            val routeView = createRouteView(path, label).apply {
+                tag = uniqueKey
             }
+            routeContainer.addView(routeView)
+            renderedPaths[uniqueKey] = routeView
+            labelsMap[uniqueKey] = label
+            Log.d("RenderDebug", "Rendered path with label: $label for key: $uniqueKey")
+        }
+
+        fun renderPathWithResult(path: TransferPath, label: String, result: Int) {
+            renderPath(path, label, result)
         }
 
         // 최소 시간 경로 추가
@@ -531,7 +542,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 1 -> "최소 시간 & 최소 비용"
                 else -> "최소 시간"
             }
-            renderPath(path, label)
+            renderPathWithResult(path, label, result)
         }
 
         // 최소 비용 경로 추가
@@ -542,13 +553,39 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 4 -> "최소 시간 & 최소 비용 & 최소 환승"
                 else -> "최소 비용"
             }
+            renderPathWithResult(path, label, result)
+        }
 
-            // 중복 여부 확인 및 라벨 업데이트
-            if (result in listOf(2, 4)) {
-                renderPath(path, label, updateLabelOnly = true)
-            } else {
-                renderPath(path, label)
+        // 최소 환승 경로 추가
+        pathData.leastTransfersPath?.paths?.forEachIndexed { index, path ->
+            val result = comparisonResults.getOrNull(index) ?: 0
+            val label = when (result) {
+                2, 3, 4 -> "최소 환승"
+                else -> "최소 환승"
             }
+            renderPathWithResult(path, label, result)
+        }
+        /*
+        // 최소 시간 경로 추가
+        pathData.shortestPath?.paths?.forEachIndexed { index, path ->
+            val result = comparisonResults.getOrNull(index) ?: 0
+            val label = when (result) {
+                3 -> "최소 시간 & 최소 환승"
+                4 -> "최소 시간 & 최소 비용 & 최소 환승"
+                1 -> "최소 시간 & 최소 비용"
+                else -> "최소 시간"
+            }
+            renderPath(path, label, result)
+        }
+
+        pathData.cheapestPath?.paths?.forEachIndexed { index, path ->
+            val result = comparisonResults.getOrNull(index) ?: 0
+            val label = when (result) {
+                2 -> "최소 비용 & 최소 환승"
+                4 -> "최소 시간 & 최소 비용 & 최소 환승"
+                else -> "최소 비용"
+            }
+            renderPath(path, label, result)
         }
 
         // 최소 환승 경로 추가
@@ -556,11 +593,11 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             val result = comparisonResults.getOrNull(index) ?: 0
             if (result in listOf(2, 3, 4)) {
                 Log.d("RenderDebug", "Skipping least transfer path as it's already included.")
-                renderPath(path, "최소 환승", updateLabelOnly = true)
-            } else {
-                renderPath(path, "최소 환승")
+                return@forEachIndexed
             }
-        }
+            val label = "최소 환승"
+            renderPath(path, label, result)
+        }*/
 
         Log.d("FinalRenderedPaths", "Rendered Paths: ${renderedPaths.keys}")
     }
