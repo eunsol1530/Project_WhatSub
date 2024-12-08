@@ -15,6 +15,11 @@ class FavoritesAdapter(
     private val onFavoriteRemoved: (TransferPath) -> Unit // 삭제 콜백 함수
 ) : RecyclerView.Adapter<FavoritesAdapter.FavoriteViewHolder>() {
 
+    fun updateData(newData: List<TransferPath>) {
+        favoritesList.clear()
+        favoritesList.addAll(newData)
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FavoriteViewHolder {
         val view = LayoutInflater.from(parent.context)

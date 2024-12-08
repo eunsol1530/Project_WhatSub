@@ -136,11 +136,11 @@ class HomeFragment : Fragment() {
             // LiveData 관찰
             homeViewModel.pathData.observe(viewLifecycleOwner) { pathData ->
                 if (pathData?.shortestPath == null && pathData?.cheapestPath == null) {
-                    Toast.makeText(
-                        requireContext(),
-                        "경로 데이터를 불러올 수 없습니다. 다시 시도해주세요.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    //Toast.makeText(
+                      //  requireContext(),
+                        //"경로 데이터를 불러올 수 없습니다. 다시 시도해주세요.",
+                        //Toast.LENGTH_SHORT
+                    //).show()
 
                     // 입력된 값을 초기화
                     startInput.setText("")

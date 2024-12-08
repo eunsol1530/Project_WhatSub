@@ -27,6 +27,7 @@ import com.example.whatsub.data.api.model.TransferPath
 import com.example.whatsub.data.api.model.PathData
 import com.example.whatsub.data.api.model.ShortestPath
 import com.example.whatsub.data.api.model.Transfer
+import com.example.whatsub.ui.favorites.FavoritesViewModel
 import com.example.whatsub.ui.home.HomeViewModel
 import com.google.gson.Gson
 import java.io.IOException
@@ -36,6 +37,8 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
     // ViewModel 선언
     private lateinit var homeViewModel: HomeViewModel
 
+    private lateinit var favoritesViewModel: FavoritesViewModel
+/*
     private fun loadPathDataFromJson(): PathData {
         return try {
             val jsonString = requireContext().resources.openRawResource(R.raw.example_path_data)
@@ -47,7 +50,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
             e.printStackTrace()
             PathData(null, null, null, emptyList()) // 기본값으로 반환
         }
-    }
+    }*/
 
 
     private fun getLineBackground(lineNumber: Int): Int {
@@ -137,12 +140,12 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
                 isFavorite = !isFavorite // 상태 반전
 
                 if (isFavorite) {
-                    setImageResource(R.drawable.icon_favorites_fill) // 아이콘 변경
-                    saveToFavorites(path) // 즐겨찾기 저장
+                    setImageResource(R.drawable.icon_favorites_fill)
+                    saveToFavorites(path) // 즐겨찾기 데이터 저장
                     Toast.makeText(context, "즐겨찾기에 추가되었습니다!", Toast.LENGTH_SHORT).show()
                 } else {
-                    setImageResource(R.drawable.icon_favorites_blank) // 아이콘 변경
-                    removeFromFavorites(path) // 즐겨찾기 삭제
+                    setImageResource(R.drawable.icon_favorites_blank)
+                    removeFromFavorites(path) // 즐겨찾기 데이터 삭제
                     Toast.makeText(context, "즐겨찾기가 취소되었습니다!", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -409,18 +412,6 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         return routeView
     }
 
-    // 즐겨찾기 삭제 함수
-    private fun removeFromFavorites(route: TransferPath) {
-        val sharedPref = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
-        val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: mutableSetOf()
-
-        // 경로를 JSON으로 변환하여 저장된 항목에서 제거
-        val routeJson = Gson().toJson(route)
-        if (favorites.contains(routeJson)) {
-            favorites.remove(routeJson)
-            sharedPref.edit().putStringSet("routes", favorites).apply()
-        }
-    }
 
     private fun String.getMinutesRatio(segments: List<Transfer>): Float {
         val totalMinutes = segments.sumOf { it.timeOnLine.extractMinutes() }
@@ -444,16 +435,26 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
     private fun saveToFavorites(route: TransferPath) {
         val sharedPref = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
         val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: mutableSetOf()
-        favorites.add(Gson().toJson(route))
-        sharedPref.edit().putStringSet("routes", favorites).apply()
+
+        val routeJson = Gson().toJson(route) // 데이터를 JSON으로 변환
+        favorites.add(routeJson) // 기존 데이터에 추가
+
+        sharedPref.edit().putStringSet("routes", favorites).apply() // 저장
         Toast.makeText(context, "즐겨찾기에 추가되었습니다!", Toast.LENGTH_SHORT).show()
     }
 
-    private fun loadFavorites(): List<TransferPath> {
+
+    private fun removeFromFavorites(route: TransferPath) {
         val sharedPref = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
-        val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: return emptyList()
-        return favorites.map { Gson().fromJson(it, TransferPath::class.java) }
+        val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: mutableSetOf()
+
+        val routeJson = Gson().toJson(route) // 삭제할 데이터를 JSON으로 변환
+        favorites.remove(routeJson) // 데이터 제거
+
+        sharedPref.edit().putStringSet("routes", favorites).apply() // 저장
+        Toast.makeText(context, "즐겨찾기가 취소되었습니다!", Toast.LENGTH_SHORT).show()
     }
+
 
 
     // dp 변환 확장 함수
@@ -640,6 +641,8 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
         // ViewModel 초기화
         homeViewModel = ViewModelProvider(requireActivity())[HomeViewModel::class.java]
+        // FavoritesViewModel 초기화
+        favoritesViewModel = ViewModelProvider(requireActivity())[FavoritesViewModel::class.java]
 
         // ViewModel 데이터 관찰
         homeViewModel.pathData.observe(viewLifecycleOwner) { pathData ->
@@ -703,6 +706,7 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
         // displayRoutes 호출
         displayRoutes(pathData, routeContainer)
+
 /*
         // 경로 데이터를 동적으로 추가
         fun displayRoutes(pathData: PathData) {
