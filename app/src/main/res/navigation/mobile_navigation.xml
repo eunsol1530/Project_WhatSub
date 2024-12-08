@@ -52,5 +52,17 @@
         android:id="@+id/navigation_news"
         android:name="com.example.whatsub.ui.news.NewsFragment"
         android:label="News"
-        tools:layout="@layout/fragment_news" />
+        tools:layout="@layout/fragment_news">
+
+        <action
+            android:id="@+id/action_newsFragment_to_newsDetailFragment"
+            app:destination="@id/fragment_news_detail" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/fragment_news_detail"
+        android:name="com.example.whatsub.ui.newsDetail.NewsDetailFragment"
+        android:label="News Detail"
+        tools:layout="@layout/fragment_news_detail" />
+
 </navigation>
