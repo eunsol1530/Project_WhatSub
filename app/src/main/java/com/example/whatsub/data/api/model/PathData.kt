@@ -47,4 +47,4 @@ data class PathData(
     val cheapestPath: Path?,
     val leastTransfersPath: Path?,
     val comparisonResults: List<Int>? = null// 기존의 comparisonResult를 대체
-)
+) : Serializable
