@@ -19,6 +19,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.example.whatsub.R
 import com.example.whatsub.data.api.model.CheapestPath
@@ -26,10 +27,14 @@ import com.example.whatsub.data.api.model.TransferPath
 import com.example.whatsub.data.api.model.PathData
 import com.example.whatsub.data.api.model.ShortestPath
 import com.example.whatsub.data.api.model.Transfer
+import com.example.whatsub.ui.home.HomeViewModel
 import com.google.gson.Gson
 import java.io.IOException
 
 class SearchFragment : Fragment (R.layout.fragment_search) {
+
+    // ViewModel 선언
+    private lateinit var homeViewModel: HomeViewModel
 
     private fun loadPathDataFromJson(): PathData {
         return try {
@@ -427,7 +432,15 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         return minutes
     }
 
-    // 즐겨찾기 저장 함수
+    /*// 즐겨찾기 저장 함수
+    private fun saveToFavorites(route: TransferPath) {
+        val sharedPref = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
+        val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: mutableSetOf()
+        favorites.add(Gson().toJson(route))
+        sharedPref.edit().putStringSet("routes", favorites).apply()
+        Toast.makeText(context, "즐겨찾기에 추가되었습니다!", Toast.LENGTH_SHORT).show()
+    }*/
+
     private fun saveToFavorites(route: TransferPath) {
         val sharedPref = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
         val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: mutableSetOf()
@@ -435,6 +448,13 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         sharedPref.edit().putStringSet("routes", favorites).apply()
         Toast.makeText(context, "즐겨찾기에 추가되었습니다!", Toast.LENGTH_SHORT).show()
     }
+
+    private fun loadFavorites(): List<TransferPath> {
+        val sharedPref = requireContext().getSharedPreferences("favorites", Context.MODE_PRIVATE)
+        val favorites = sharedPref.getStringSet("routes", mutableSetOf()) ?: return emptyList()
+        return favorites.map { Gson().fromJson(it, TransferPath::class.java) }
+    }
+
 
     // dp 변환 확장 함수
     private val Int.dp: Int
@@ -602,32 +622,58 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
         Log.d("FinalRenderedPaths", "Rendered Paths: ${renderedPaths.keys}")
     }
 
+    private fun updateRoutes(pathData: PathData) {
+        val routeContainer: LinearLayout = requireView().findViewById(R.id.routeContainer)
 
+        if (routeContainer.childCount > 0) {
+            routeContainer.removeAllViews()
+        }
+
+        displayRoutes(pathData, routeContainer)
+    }
 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // ViewModel 초기화
+        //homeViewModel = ViewModelProvider(requireActivity()).get(HomeViewModel::class.java)
 
+        // ViewModel 초기화
+        homeViewModel = ViewModelProvider(requireActivity())[HomeViewModel::class.java]
 
-        // arguments로 전달받은 데이터 가져오기
-        val startLocation = arguments?.getString("startLocation") ?: "출발지가 없습니다"
-        val destinationLocation = arguments?.getString("destinationLocation") ?: "도착지가 없습니다"
+        // ViewModel 데이터 관찰
+        homeViewModel.pathData.observe(viewLifecycleOwner) { pathData ->
+            if (pathData != null) {
+                updateRoutes(pathData)
+            }
+        }
 
-
-        // Log 추가
-        Log.d("SearchFragment", "Received arguments: startLocation=$startLocation, destinationLocation=$destinationLocation")
-
-        if (startLocation.isEmpty() || destinationLocation.isEmpty()) {
-            Toast.makeText(context, "잘못된 데이터입니다. 홈 화면으로 돌아갑니다.", Toast.LENGTH_SHORT).show()
-            findNavController().popBackStack() // 이전 화면으로 이동
-            return
+        homeViewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
+            if (!errorMessage.isNullOrEmpty()) {
+                Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show()
+            }
         }
 
         // UI 요소 초기화 및 데이터 처리
         val startInput: EditText = view.findViewById(R.id.start_location)
         val destinationInput: EditText = view.findViewById(R.id.destination_location)
         val routeContainer: LinearLayout = view.findViewById(R.id.routeContainer)
+
+        // arguments로 전달받은 데이터 가져오기
+        val startLocation = arguments?.getString("startLocation") ?: "출발지가 없습니다"
+        val destinationLocation = arguments?.getString("destinationLocation") ?: "도착지가 없습니다"
+
+
+        Log.d("SearchFragment", "Received startLocation: $startLocation")
+        Log.d("SearchFragment", "Received destinationLocation: $destinationLocation")
+
+
+        if (startLocation.isEmpty() || destinationLocation.isEmpty()) {
+            Toast.makeText(context, "잘못된 데이터입니다. 홈 화면으로 돌아갑니다.", Toast.LENGTH_SHORT).show()
+            findNavController().popBackStack() // 이전 화면으로 이동
+            return
+        }
 
         if (routeContainer == null) {
             Log.e("SearchFragment", "routeContainer is null! Check fragment_search.xml")
@@ -642,7 +688,15 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
         // JSON 데이터 불러오기
 
-        val pathData = loadPathDataFromJson()
+        //val pathData = loadPathDataFromJson()
+
+        val pathData = arguments?.getSerializable("pathData") as? PathData
+        Log.d("SearchFragment", "Received PathData: $pathData")
+        if (pathData == null) {
+            Toast.makeText(requireContext(), "경로 데이터가 없습니다.", Toast.LENGTH_SHORT).show()
+            findNavController().popBackStack()
+            return
+        }
 
         // displayRoutes 호출
         displayRoutes(pathData, routeContainer)
@@ -680,53 +734,78 @@ class SearchFragment : Fragment (R.layout.fragment_search) {
 
         // 교환 버튼 클릭 이벤트
         exchangeButton.setOnClickListener {
-            Log.d("SearchFragment", "Exchange Button Clicked!")
+            Log.d("SearchFragment", "Before Exchange - Start: ${startInput.text}, Destination: ${destinationInput.text}")
 
-            val startText = startInput.text.toString()
-            val destinationText = destinationInput.text.toString()
+            val temp = startInput.text.toString()
+            startInput.setText(destinationInput.text.toString())
+            destinationInput.setText(temp)
 
-            if (startText.isBlank() || destinationText.isBlank()) {
-                Toast.makeText(context, "출발지와 도착지를 입력해주세요", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+            Log.d("SearchFragment", "After Exchange - Start: ${startInput.text}, Destination: ${destinationInput.text}")
 
-            if (startText == destinationText) {
-                Toast.makeText(context, "출발지와 도착지가 동일합니다. 다시 입력해주세요.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            startInput.setText(destinationText)
-            destinationInput.setText(startText)
         }
 
         // 재탐색 버튼 클릭 이벤트
         researchBtn.setOnClickListener {
-            val newStart = startInput.text.toString()
-            val newDestination = destinationInput.text.toString()
+            val newStart = startInput.text.toString().trim()
+            val newDestination = destinationInput.text.toString().trim()
 
-            // 출발지와 도착지에 값이 없을 경우
             if (newStart.isBlank() || newDestination.isBlank()) {
                 Toast.makeText(requireContext(), "출발지와 도착지를 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // 출발지와 도착지가 동일할 경우
             if (newStart == newDestination) {
-                Toast.makeText(context, "출발지와 도착지가 동일합니다. 다시 입력해주세요.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "출발지와 도착지가 동일합니다. 다시 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // 경로 탐색을 시작
-            Log.d("ResearchButton", "Start: $newStart, Destination: $newDestination")
+            Log.d("SearchFragment", "재검색 시작 - 출발지: $newStart, 도착지: $newDestination")
 
-            // 새로운 JSON 데이터 로드 (예시로 동일한 JSON 로드 사용)
-            val updatedPathData = loadPathDataFromJson()
+            // ViewModel을 통해 서버에 경로 요청
+            homeViewModel.fetchShortestPath(newStart, newDestination)
 
-            // RouteContainer 초기화 후 새 데이터로 업데이트
-            routeContainer.removeAllViews()
-            displayRoutes(updatedPathData, routeContainer)
+            /*// LiveData를 관찰하여 결과 업데이트
+            homeViewModel.pathData.observe(viewLifecycleOwner) { updatedPathData ->
+                routeContainer.removeAllViews() // 기존 데이터 제거
+                displayRoutes(updatedPathData, routeContainer) // 새로운 데이터 표시
+                Toast.makeText(requireContext(), "새로운 경로를 탐색했습니다.", Toast.LENGTH_SHORT).show()
+            }*/
 
-            Toast.makeText(requireContext(), "새로운 경로를 탐색했습니다.", Toast.LENGTH_SHORT).show()
+            // LiveData를 관찰하여 에러 메시지 처리
+            homeViewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
+                Toast.makeText(requireContext(), "에러 발생: $errorMessage", Toast.LENGTH_SHORT).show()
+                Log.e("SearchFragment", "Error: $errorMessage")
+            }
         }
+
+
+        /*        researchBtn.setOnClickListener {
+                    val newStart = startInput.text.toString()
+                    val newDestination = destinationInput.text.toString()
+
+                    // 출발지와 도착지에 값이 없을 경우
+                    if (newStart.isBlank() || newDestination.isBlank()) {
+                        Toast.makeText(requireContext(), "출발지와 도착지를 입력해주세요.", Toast.LENGTH_SHORT).show()
+                        return@setOnClickListener
+                    }
+
+                    // 출발지와 도착지가 동일할 경우
+                    if (newStart == newDestination) {
+                        Toast.makeText(context, "출발지와 도착지가 동일합니다. 다시 입력해주세요.", Toast.LENGTH_SHORT).show()
+                        return@setOnClickListener
+                    }
+
+                    // 경로 탐색을 시작
+                    Log.d("ResearchButton", "Start: $newStart, Destination: $newDestination")
+
+                    // 새로운 JSON 데이터 로드 (예시로 동일한 JSON 로드 사용)
+                    val updatedPathData = loadPathDataFromJson()
+
+                    // RouteContainer 초기화 후 새 데이터로 업데이트
+                    routeContainer.removeAllViews()
+                    displayRoutes(updatedPathData, routeContainer)
+
+                    Toast.makeText(requireContext(), "새로운 경로를 탐색했습니다.", Toast.LENGTH_SHORT).show()
+                }*/
     }
 }

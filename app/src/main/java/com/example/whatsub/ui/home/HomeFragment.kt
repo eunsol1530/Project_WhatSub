@@ -1,6 +1,9 @@
 package com.example.whatsub.ui.home
 
 import android.os.Bundle
+import android.util.Log
+import retrofit2.Call
+import retrofit2.Response
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,9 +14,11 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.example.whatsub.R
+import com.example.whatsub.data.api.RetrofitClient
 import com.example.whatsub.databinding.FragmentHomeBinding
 import com.example.whatsub.data.api.model.PathData
 import com.google.gson.Gson
+import retrofit2.Callback
 import java.io.IOException
 
 class HomeFragment : Fragment() {
@@ -24,19 +29,16 @@ class HomeFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
+    private lateinit var homeViewModel: HomeViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val homeViewModel =
-            ViewModelProvider(this).get(HomeViewModel::class.java)
-
+        homeViewModel = ViewModelProvider(this).get(HomeViewModel::class.java)
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-
-        return root
+        return binding.root
     }
 
     override fun onDestroyView() {
@@ -44,9 +46,10 @@ class HomeFragment : Fragment() {
         _binding = null
     }
 
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+/*
         // JSON 데이터 로드 함수 추가
         fun loadPathDataFromJson(): PathData? {
             return try {
@@ -59,9 +62,80 @@ class HomeFragment : Fragment() {
                 null
             }
         }
+*/
+
+// 출발지와 도착지 입력 필드
+        val startInput = binding.startInput
+        val destinationInput = binding.destinationInput
+
+        // 교환 버튼 ImageButton
+        val exchangeButton: ImageButton = view.findViewById(R.id.btn_exchange)
+
+        // 버튼 클릭 이벤트
+        exchangeButton.setOnClickListener {
+            if (startInput.text.isNullOrBlank() || destinationInput.text.isNullOrBlank()) {
+                Toast.makeText(context, "출발지와 도착지를 입력해주세요", Toast.LENGTH_SHORT).show()
+            } else {
+                val startText = startInput.text.toString()
+                val destinationText = destinationInput.text.toString()
+                startInput.setText(destinationText)
+                destinationInput.setText(startText)
+            }
+        }
+
+        // 검색 버튼 클릭 이벤트
+        binding.btnSearch.setOnClickListener {
+            val startStation = startInput.text.toString().trim()
+            val endStation = destinationInput.text.toString().trim()
+
+            if (startStation.isBlank() || endStation.isBlank()) {
+                Toast.makeText(requireContext(), "출발지와 도착지를 입력해주세요.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (startStation == endStation) {
+                Toast.makeText(requireContext(), "출발지와 도착지가 동일합니다.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            //val bundle = Bundle().apply {
+            //  putString("startLocation", startInput.text.toString())
+            //putString("destinationLocation", destinationInput.text.toString())
+            //}
 
 
+            // ViewModel을 통해 데이터 요청
+            homeViewModel.fetchShortestPath(startStation, endStation)
 
+            /* val bundle = Bundle().apply {
+                putString("startLocation", startStation)
+                putString("destinationLocation", endStation)
+            }
+            findNavController().navigate(R.id.action_homeFragment_to_searchFragment, bundle)
+
+        }
+
+            */
+
+            // LiveData 관찰
+            homeViewModel.pathData.observe(viewLifecycleOwner) { pathData ->
+                // API로부터 데이터를 성공적으로 받았을 때 처리
+                val bundle = Bundle().apply {
+                    putString("startLocation", startStation)
+                    putString("destinationLocation", endStation)
+                    putSerializable("pathData", pathData)
+                }
+                findNavController().navigate(R.id.action_homeFragment_to_searchFragment, bundle)
+            }
+        }
+
+        homeViewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
+            // 에러 메시지 처리
+            Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show()
+        }
+
+    }
+/*
         // 출발지와 도착지 EditText
         val startInput: EditText = view.findViewById(R.id.start_input)
         val destinationInput: EditText = view.findViewById(R.id.destination_input)
@@ -83,6 +157,21 @@ class HomeFragment : Fragment() {
             }
         }
         searchButton.setOnClickListener {
+
+            val startStation = startInput.text.toString()
+            val endStation = destinationInput.text.toString()
+
+            if (startStation.isBlank() || endStation.isBlank()) {
+                Toast.makeText(context, "출발지와 도착지를 입력해주세요", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (startStation == endStation) {
+                Toast.makeText(context, "출발지와 도착지가 동일합니다. 다시 입력해주세요.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            /*
             if (startInput.text.isNullOrBlank() || destinationInput.text.isNullOrBlank()) {
                 Toast.makeText(context, "출발지와 도착지를 입력해주세요", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -90,8 +179,29 @@ class HomeFragment : Fragment() {
             if (startInput.text.toString() == destinationInput.text.toString()) {
                 Toast.makeText(context, "출발지와 도착지가 동일합니다. 다시 입력해주세요.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
-            }
+            }*/
 
+            // Retrofit 호출
+            RetrofitClient.instance.getPathData(startStation.toInt(), endStation.toInt())
+                .enqueue(object : Callback<PathData> {
+                    override fun onResponse(call: Call<PathData>, response: Response<PathData>) {
+                        if (response.isSuccessful && response.body() != null) {
+                            val pathData = response.body()
+                            val bundle = Bundle().apply {
+                                putSerializable("pathData", pathData)
+                            }
+                            findNavController().navigate(R.id.action_homeFragment_to_searchFragment, bundle)
+                        } else {
+                            Toast.makeText(context, "경로 데이터를 불러올 수 없습니다.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    override fun onFailure(call: Call<PathData>, t: Throwable) {
+                        Toast.makeText(context, "서버 요청에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                    }
+                })
+
+            /*
             // JSON 데이터 확인
             val pathData = loadPathDataFromJson()
 
@@ -99,11 +209,6 @@ class HomeFragment : Fragment() {
                 Toast.makeText(context, "데이터를 불러오지 못했습니다.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-/*
-            if (matchedData.isEmpty()) {
-                Toast.makeText(context, "해당 경로를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }*/
 
             val bundle = Bundle().apply {
                 putString("startLocation", startInput.text.toString())
@@ -111,6 +216,5 @@ class HomeFragment : Fragment() {
             }
 
             findNavController().navigate(R.id.action_homeFragment_to_searchFragment, bundle)
+            */*/
         }
-    }
-}
