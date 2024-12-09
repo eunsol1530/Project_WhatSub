@@ -1,14 +1,17 @@
 package com.example.whatsub.ui.home
 
+import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
 import retrofit2.Call
 import retrofit2.Response
 import android.view.LayoutInflater
+import android.view.ScaleGestureDetector
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
@@ -27,6 +30,12 @@ import java.io.IOException
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
+
+    private lateinit var scaleGestureDetector: ScaleGestureDetector
+    private lateinit var imageView: ImageView
+    private var scaleFactor = 1.0f // 기본 스케일 비율
+    private val maxScaleFactor = 5.0f // 최대 확대 비율
+    private val minScaleFactor = 1.0f // 최소 축소 비율
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -58,7 +67,49 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // 키보드 상태 감지
+        view.viewTreeObserver.addOnGlobalLayoutListener {
+            val rect = Rect()
+            view.getWindowVisibleDisplayFrame(rect)
+
+            val screenHeight = view.rootView.height
+            val keypadHeight = screenHeight - rect.bottom
+
+            // 키보드가 화면의 20% 이상 차지하면 올라온 것으로 간주
+            if (keypadHeight > screenHeight * 0.2) {
+                // 키보드가 올라온 상태
+                // ImageView의 이동을 방지하거나 다른 UI 조정
+                view.findViewById<ImageView>(R.id.home_path_iv).visibility = View.GONE
+            } else {
+                // 키보드가 내려간 상태
+                view.findViewById<ImageView>(R.id.home_path_iv).visibility = View.VISIBLE
+            }
+        }
+
         homeViewModel = ViewModelProvider(this).get(HomeViewModel::class.java)
+
+        imageView = view.findViewById(R.id.home_path_iv)
+
+        // ScaleGestureDetector 초기화
+        scaleGestureDetector = ScaleGestureDetector(requireContext(), object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(detector: ScaleGestureDetector): Boolean {
+                scaleFactor *= detector.scaleFactor
+
+                // 스케일 비율 제한
+                scaleFactor = scaleFactor.coerceIn(minScaleFactor, maxScaleFactor)
+
+                // 이미지 뷰에 적용
+                imageView.scaleX = scaleFactor
+                imageView.scaleY = scaleFactor
+                return true
+            }
+        })
+
+        // 이미지 뷰에 터치 리스너 추가
+        imageView.setOnTouchListener { _, event ->
+            scaleGestureDetector.onTouchEvent(event)
+            true
+        }
 
         /*
         // JSON 데이터 로드 함수 추가
