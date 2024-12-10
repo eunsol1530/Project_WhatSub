@@ -18,10 +18,15 @@
           android:textColor="@color/black"
          android:layout_marginTop="16dp" />
 
-    <!-- 즐겨찾기 목록을 표시할 RecyclerView -->
-    <LinearLayout
-        android:id="@+id/routeContainer"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical" />
+        android:layout_height="match_parent" >
+
+        <LinearLayout
+            android:id="@+id/routeContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+    </ScrollView>
 </LinearLayout>
